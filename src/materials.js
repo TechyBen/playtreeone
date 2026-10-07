@@ -45,6 +45,7 @@ export const U = {
   uRampDither: { value: 0.8 },
   uAccentChance: { value: 0 },
   uWind: { value: 1 },
+  uWindDir: { value: new THREE.Vector2(0.9, -0.42) }, // unit xz the wind blows toward
 };
 
 const COMMON = /* glsl */ `
@@ -72,6 +73,7 @@ uniform float uRampSteps;
 uniform float uRampDither;
 uniform float uAccentChance;
 uniform float uWind;
+uniform vec2 uWindDir;
 
 float hash12(vec2 p) {
   vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -97,6 +99,22 @@ float shadowAt(vec3 wp) {
 `;
 
 const VERT = /* glsl */ `
+// Wind, shared by branches, leaves and billboards so they move together and
+// LOD switches don't pop. Gust waves drift across the forest along uWindDir;
+// each tree bends from the root (offset grows with height squared) with its
+// own gentle oscillation and a little cross-wind wobble. Off while baking.
+vec3 windSway(vec3 base, float h) {
+  if (uPass > 1.5 || uWind <= 0.0) return vec3(0.0);
+  vec2 d = uWindDir;
+  vec2 q = base.xz * 0.035 - d * uTime * 0.12;
+  float gust = vnoise(q) * 0.75 + vnoise(q * 2.3 + 7.0) * 0.25;
+  float phase = hash12(floor(base.xz * 2.0)) * 6.2831;
+  float bend = pow(clamp(h / 14.0, 0.0, 1.5), 2.0);
+  float along = gust * (0.75 + 0.25 * sin(uTime * 1.3 + phase));
+  float across = 0.25 * gust * sin(uTime * 0.9 + phase * 1.7);
+  vec2 off = (d * along + vec2(-d.y, d.x) * across) * uWind * 0.45 * bend;
+  return vec3(off.x, 0.0, off.y);
+}
 // Snap clip-space xy to the low-res pixel grid (uSnap = grid size in pixels).
 vec4 psx(vec4 clip) {
   if (uPass > 0.5 || uSnap <= 0.0) return clip;
@@ -178,6 +196,8 @@ void main() {
   vFade = aFade;
 #endif
   vec4 wp = m * vec4(position, 1.0);
+  vec3 base = (m * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+  wp.xyz += windSway(base, wp.y - base.y);
   vec3 n = normalize(mat3(m) * normal);
   vNdl = max(dot(n, uSunDir), 0.0);
   vAo = aAo * (0.8 + 0.2 * n.y);
@@ -226,12 +246,15 @@ void main() {
 #endif
   vec4 wc = m * vec4(position, 1.0);
   float sc = length(m[0].xyz);
-  float sw = sin(uTime * 1.7 + aRand.y * 6.2831 + wc.x * 0.21 + wc.z * 0.17) * uWind;
+  vec3 base = (m * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+  wc.xyz += windSway(base, wc.y - base.y);
+  // Flutter on top of the branch sway: small and quicker, per cluster.
+  float sw = sin(uTime * 2.3 + aRand.y * 6.2831 + wc.x * 0.21 + wc.z * 0.17) * uWind;
   vec3 right = vec3(viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]);
   vec3 up = vec3(viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]);
   float a = aRand.x + sw * 0.05;
   vec2 c = mat2(cos(a), sin(a), -sin(a), cos(a)) * aCorner;
-  vec3 wp = wc.xyz + (right * c.x + up * c.y) * sc + vec3(sw, 0.0, sw * 0.7) * 0.04 * sc;
+  vec3 wp = wc.xyz + (right * c.x + up * c.y) * sc + vec3(uWindDir.x, 0.0, uWindDir.y) * sw * 0.025 * sc;
   vec3 n = normalize(mat3(m) * normal);
   float w = dot(n, uSunDir) * 0.5 + 0.5;
   vNdl = w * w;
@@ -289,9 +312,8 @@ void main() {
   float ang = atan(dot(dirW, ax), dot(dirW, az));
   float cell = mod(floor(ang / (6.2831853 / uViews) + 0.5), uViews);
   vec3 right = normalize(cross(vec3(0.0, 1.0, 0.0), dirW));
-  float sway = sin(uTime * 1.1 + base.x * 0.3 + base.z * 0.2) * 0.03 * uWind * position.y;
-  vec3 wp = base + right * (position.x * uSize.x + sway) * sc
-                 + vec3(0.0, (uMinY + position.y * uSize.y) * sc, 0.0);
+  float h = (uMinY + position.y * uSize.y) * sc;
+  vec3 wp = base + right * position.x * uSize.x * sc + vec3(0.0, h, 0.0) + windSway(base, h);
   vUv = vec2((cell + position.x + 0.5) / uViews, position.y);
   vWorld = wp;
   gl_Position = psx(projectionMatrix * viewMatrix * vec4(wp, 1.0));

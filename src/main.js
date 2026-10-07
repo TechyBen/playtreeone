@@ -16,7 +16,7 @@ import { sunPosition, moonPosition, estimateLocation, daylight, siderealTime } f
 import { makeStars } from './stars.js';
 import { makeMoon } from './moon.js';
 import { makePrecip } from './precip.js';
-import { fetchWeather, cachedWeather, lookupTown, toScene, round1 } from './weather.js';
+import { fetchWeather, cachedWeather, lookupTown, toScene, round1, windVector } from './weather.js';
 import { Rng, fbm, hash2 } from './rng.js';
 
 // Palette hex values are used as-is (no sRGB<->linear conversion): PS1 style.
@@ -43,7 +43,7 @@ const params = {
   // real-time sun (location only used locally for the sun's position)
   realSun: false, latitude: 51.5, longitude: -0.1, stars: 1, timeShift: 0,
   // weather: 'off' | 'live' (Open-Meteo) | 'manual' (sliders below)
-  weather: 'off', town: '', wCloud: 0, wRain: 0, wSnow: 0, wVisibility: 0, wWind: 0.5,
+  weather: 'off', town: '', wCloud: 0, wRain: 0, wSleet: 0, wHail: 0, wSnow: 0, wVisibility: 0, wWind: 0.5, wWindFrom: 245,
 };
 
 // ?saver runs the unattended screensaver mode (see saver.js); a few
@@ -145,7 +145,9 @@ function dirFrom(elDeg, azDeg) {
 
 // Weather effects currently applied (see weather.js toScene). `fog` is a
 // density or null (keep the preset's); the rest are 0..1.
-const weather = { scene: { cloud: 0, fog: null, rain: 0, snow: 0, wind: 0.5, label: '' }, status: 'off', fetchedAt: 0 };
+// `dir` is the unit [x, z] the wind blows toward (default: from the west-south-west).
+const CALM = { cloud: 0, fog: null, rain: 0, sleet: 0, hail: 0, snow: 0, wind: 0.5, dir: windVector(245), label: '' };
+const weather = { scene: { ...CALM }, status: 'off', fetchedAt: 0 };
 
 // Light for the current sun elevation. Below the horizon the scene dims toward
 // a blue night tint and the real moon takes over as the light (brighter near
@@ -154,7 +156,7 @@ const NIGHT_TINT = new THREE.Color(0.17, 0.2, 0.32);
 const MOON_COLOR = new THREE.Color(0.62, 0.7, 0.92);
 const light = {
   dir: new THREE.Vector3(), strength: 1, godrays: 1, day: 1, tint: new THREE.Color(), moon: false,
-  fog: 0.03, moonPos: null, sunTrue: new THREE.Vector3(),
+  fog: 0.03, wind: 1, moonPos: null, sunTrue: new THREE.Vector3(),
 };
 function computeLight() {
   const el = params.sunElevation, ss = THREE.MathUtils.smoothstep, ws = weather.scene;
@@ -177,9 +179,10 @@ function computeLight() {
   }
   light.strength *= 1 - 0.75 * ws.cloud;
   const shafts = light.moon ? 0.5 * moonUp * (1 - light.day) : Math.max(0.15, ss(el, -2, 4));
-  light.godrays = params.godrays * shafts * Math.pow(1 - ws.cloud, 1.5) * (1 - 0.7 * ws.rain);
+  const wet = Math.min(1, ws.rain + ws.sleet + ws.hail);
+  light.godrays = params.godrays * shafts * Math.pow(1 - ws.cloud, 1.5) * (1 - 0.7 * wet);
   // Fog: lean toward the reported visibility, thicker in rain and snow.
-  light.fog = (ws.fog === null ? params.fogDensity : params.fogDensity * 0.4 + ws.fog * 0.6) * (1 + 0.6 * ws.rain + 0.8 * ws.snow);
+  light.fog = (ws.fog === null ? params.fogDensity : params.fogDensity * 0.4 + ws.fog * 0.6) * (1 + 0.6 * ws.rain + 0.7 * ws.sleet + 0.4 * ws.hail + 0.8 * ws.snow);
   return light;
 }
 
@@ -370,8 +373,9 @@ function syncUniforms() {
   mu.uDay.value = L.day;
   mu.uCloud.value = ws.cloud;
   mu.uFraction.value = L.moonPos.fraction;
-  precip.set({ rain: ws.rain, snow: ws.snow, wind: ws.wind });
-  api.ambience?.setWeather?.({ rain: ws.rain, wind: ws.wind });
+  precip.set(ws);
+  api.ambience?.setWeather?.({ rain: Math.min(1, ws.rain + 0.6 * ws.sleet), hail: ws.hail, wind: ws.wind });
+  U.uWindDir.value.set(ws.dir[0], ws.dir[1]);
   U.uFogDensity.value = L.fog;
   U.uFogBase.value = params.fogBase;
   U.uFogFalloff.value = params.fogFalloff;
@@ -381,7 +385,9 @@ function syncUniforms() {
   U.uAffine.value = params.affine ? 1 : 0;
   U.uRampSteps.value = params.rampSteps;
   U.uRampDither.value = params.rampDither;
-  U.uWind.value = params.wind * (0.4 + 1.2 * ws.wind);
+  // Base wind strength; the frame adds the gusts you can hear on top.
+  light.wind = params.wind * (0.4 + 1.2 * ws.wind);
+  U.uWind.value = light.wind;
   U.uShadowOn.value = params.shadows ? 1 : 0;
   const key = p.id + ':' + params.rampSteps;
   if (key !== rampKey) {
@@ -395,7 +401,7 @@ function syncUniforms() {
   pu.uFogDensity.value = L.fog;
   pu.uBits.value = params.colorBits;
   pu.uDither.value = params.dither;
-  motes.visible = params.motes && ws.rain + ws.snow < 0.05;
+  motes.visible = params.motes && ws.rain + ws.sleet + ws.hail + ws.snow < 0.05;
 }
 
 function applyPreset(id) {
@@ -499,7 +505,6 @@ const rebuild = () => buildForest();
 }
 
 // ---------------------------------------------------------------- weather
-const CALM = { cloud: 0, fog: null, rain: 0, snow: 0, wind: 0.5, label: '' };
 function applyReading(w, source) {
   weather.scene = toScene(w);
   weather.status = `${weather.scene.label} (${source})`;
@@ -519,7 +524,8 @@ async function refreshWeather() {
 function applyManualWeather() {
   const v = params.wVisibility;
   weather.scene = {
-    cloud: params.wCloud, rain: params.wRain, snow: params.wSnow, wind: params.wWind,
+    cloud: params.wCloud, rain: params.wRain, sleet: params.wSleet, hail: params.wHail, snow: params.wSnow,
+    wind: params.wWind, dir: windVector(params.wWindFrom),
     fog: v > 0 ? Math.min(0.1, Math.max(0.003, 3.9 / v)) : null, label: 'manual',
   };
   weather.status = 'manual';
@@ -561,9 +567,12 @@ function setWeatherMode() {
   const manual = () => { if (params.weather === 'manual') applyManualWeather(); };
   m.add(params, 'wCloud', 0, 1, 0.01).name('cloud').onChange(manual);
   m.add(params, 'wRain', 0, 1, 0.01).name('rain').onChange(manual);
+  m.add(params, 'wSleet', 0, 1, 0.01).name('sleet').onChange(manual);
+  m.add(params, 'wHail', 0, 1, 0.01).name('hail').onChange(manual);
   m.add(params, 'wSnow', 0, 1, 0.01).name('snow').onChange(manual);
   m.add(params, 'wVisibility', 0, 20000, 50).name('visibility m (0 = preset)').onChange(manual);
   m.add(params, 'wWind', 0, 1, 0.01).name('wind').onChange(manual);
+  m.add(params, 'wWindFrom', 0, 360, 1).name('wind from (deg)').onChange(manual);
 }
 
 {
@@ -688,6 +697,9 @@ function frame(now) {
     camera.position.y = floor;
   }
   U.uTime.value = now / 1000;
+  // Trees sway with the gusts you can hear (when sound is on).
+  if (api.ambience) U.uWind.value = light.wind * (0.6 + 0.9 * api.ambience.windLevel());
+  precip.setGround(terrainHeight(camera.position.x, camera.position.z));
   // Stars turn with the real sidereal time at your location.
   stars.material.uniforms.uLst.value = siderealTime(skyNow(), params.longitude);
   stars.material.uniforms.uLat.value = THREE.MathUtils.degToRad(params.latitude);

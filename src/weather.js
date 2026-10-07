@@ -7,7 +7,7 @@
 // weather.
 
 const CACHE_KEY = 'treeps1.weather';
-const FIELDS = 'temperature_2m,precipitation,rain,showers,snowfall,cloud_cover,visibility,wind_speed_10m,wind_gusts_10m,weather_code';
+const FIELDS = 'temperature_2m,precipitation,rain,showers,snowfall,cloud_cover,visibility,wind_speed_10m,wind_gusts_10m,wind_direction_10m,weather_code';
 
 // WMO weather codes -> short labels.
 const CODES = {
@@ -43,7 +43,7 @@ export async function fetchWeather(lat, lon) {
     at: Date.now(), lat: round1(lat), lon: round1(lon),
     temp: c.temperature_2m, cloud: c.cloud_cover / 100, visibility: c.visibility,
     rain: (c.rain || 0) + (c.showers || 0), snow: c.snowfall || 0, precip: c.precipitation || 0,
-    wind: c.wind_speed_10m, gusts: c.wind_gusts_10m, code: c.weather_code,
+    wind: c.wind_speed_10m, gusts: c.wind_gusts_10m, windFrom: c.wind_direction_10m, code: c.weather_code,
   };
   try { localStorage.setItem(CACHE_KEY, JSON.stringify(w)); } catch { /* storage may be blocked */ }
   return w;
@@ -57,21 +57,34 @@ export function cachedWeather(maxAgeHours = 6) {
   return null;
 }
 
+// Meteorological "wind from" (degrees clockwise from north) -> unit [x, z]
+// the wind blows toward, in scene axes (-Z north, +X east).
+export function windVector(fromDeg) {
+  const a = (fromDeg * Math.PI) / 180;
+  return [-Math.sin(a), Math.cos(a)];
+}
+
 // Reading -> scene effects, all 0..1 except fog (a density, or null = preset).
 export function toScene(w) {
   const code = w.code ?? 0;
   const freezing = w.temp !== undefined && w.temp < 1;
   let rain = Math.min(1, w.rain / 4); // 4 mm/h is heavy
   let snow = Math.min(1, w.snow / 1); // 1 cm/h is heavy
-  if (code >= 51 && code <= 57) rain = Math.max(rain, 0.15); // drizzle
+  let sleet = 0, hail = 0;
+  if (code >= 51 && code <= 55) rain = Math.max(rain, 0.15); // drizzle
   if (freezing && w.precip > 0 && snow === 0) { snow = Math.min(1, w.precip / 2); rain = 0; }
+  // Rain and snow together near freezing is sleet; so are freezing rain/drizzle and snow grains.
+  if (rain > 0 && snow > 0) { sleet = Math.min(1, (rain + snow) / 2); rain *= 0.3; snow *= 0.5; }
+  if ([56, 57, 66, 67, 77].includes(code)) sleet = Math.max(sleet, 0.35);
+  if (code === 96 || code === 99) hail = 0.6;
   // Koschmieder: extinction ~ 3.9 / visibility.
   let fog = w.visibility ? Math.min(0.1, Math.max(0.003, 3.9 / w.visibility)) : null;
   if (code === 45 || code === 48) fog = Math.max(fog ?? 0, 0.07);
   return {
     cloud: Math.min(1, Math.max(0, w.cloud ?? 0)),
-    fog, rain, snow,
+    fog, rain, snow, sleet, hail,
     wind: Math.min(1, Math.max(0.05, (w.gusts ?? w.wind ?? 5) / 18)),
+    dir: windVector(w.windFrom ?? 245),
     label: `${CODES[code] ?? 'weather'}, ${Math.round(w.temp)}°C, wind ${Math.round(w.wind)} m/s`,
   };
 }

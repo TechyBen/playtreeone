@@ -128,6 +128,7 @@ export class Ambience {
     this.gustTc = 3;
     this.windiness = 0.5; // from live weather: 0 still .. 1 gale
     this.rain = 0;
+    this.hail = 0;
   }
 
   start() {
@@ -170,9 +171,10 @@ export class Ambience {
   }
 
   // Live weather: how windy (0..1) and how hard it is raining (0..1).
-  setWeather({ wind, rain }) {
-    if (wind !== undefined) { this.windiness = wind; this.nextGust = 0; }
+  setWeather({ wind, rain, hail }) {
+    if (wind !== undefined && Math.abs(wind - this.windiness) > 0.02) { this.windiness = wind; this.nextGust = 0; }
     if (rain !== undefined) this.rain = rain;
+    if (hail !== undefined) this.hail = hail;
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
     this.rainHiss.gain.setTargetAtTime(0.09 * this.rain, now, 3);
@@ -200,15 +202,16 @@ export class Ambience {
     this.setWeather({});
   }
 
-  drip(now) {
+  // A raindrop tick, or a sharper, brighter one for hail.
+  drip(now, hard = false) {
     const ctx = this.ctx, r = this.rng;
     const o = ctx.createOscillator();
-    const f = r.float(1400, 4200);
+    const f = hard ? r.float(3000, 7000) : r.float(1400, 4200);
     o.frequency.setValueAtTime(f, now);
     o.frequency.exponentialRampToValueAtTime(f * 0.6, now + 0.03);
     const g = gainNode(ctx, 0, null);
-    g.gain.setValueAtTime(0.015 * r.float(0.3, 1), now);
-    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+    g.gain.setValueAtTime((hard ? 0.022 : 0.015) * r.float(0.3, 1), now);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + (hard ? 0.018 : 0.04));
     const pan = ctx.createStereoPanner();
     pan.pan.value = r.float(-0.9, 0.9);
     o.connect(g).connect(pan).connect(this.windBus);
@@ -268,8 +271,9 @@ export class Ambience {
     if (now >= this.phase.end) this.nextPhase(now);
     // Drips: a few per second in steady rain.
     for (let i = 0, n = this.rng.int(0, Math.round(this.rain * 4)); i < n; i++) this.drip(now + this.rng.float(0, 0.2));
+    for (let i = 0, n = this.rng.int(0, Math.round(this.hail * 8)); i < n; i++) this.drip(now + this.rng.float(0, 0.2), true);
     // Birds go quiet in rain.
-    const env = this.envelope(now) * (1 - 0.85 * this.rain);
+    const env = this.envelope(now) * (1 - 0.85 * Math.min(1, this.rain + this.hail));
     for (const b of this.birds) {
       if (now < b.next) continue;
       const gap = this.rng.range(SPECIES[b.species].gap) * b.tempo;

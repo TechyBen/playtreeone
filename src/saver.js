@@ -103,8 +103,6 @@ export function startSaver(api, q) {
     }
     pipe.uniforms.uGodray.value = api.light.godrays * (0.75 + 0.25 * Math.sin((TAU * u) / 173 + p.ph[2])) * (1 - fade);
 
-    // Trees sway with the wind you can hear.
-    if (amb) U.uWind.value = 0.4 + 1.4 * amb.windLevel();
 
     // Camera: slow circle in the clearing, gaze outward, leaning toward the sun.
     const th = p.th0 + (p.dir * u * TAU) / (T * 1.6);

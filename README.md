@@ -59,9 +59,13 @@ Under **Weather** in the panel, choose `live` to use [Open-Meteo](https://open-m
 |---|---|
 | Cloud cover | Dims the sun or moon, light shafts, stars and moon disc; flattens the sky |
 | Visibility, fog codes | Fog density |
-| Wind and gusts | Gust range, wind sound and tree sway |
-| Rain, showers, drizzle | Rain streaks, rain hiss and drips, fewer birds |
-| Snowfall (or precipitation below about 1°C) | Snowflakes |
+| Wind speed, gusts and direction | Wind strength and direction for the sway, the wind sound and the drift of rain and snow |
+| Drizzle to heavy rain | Streaks get faster, longer and brighter with intensity; heavy rain adds ground splashes. Rain hiss and drips, fewer birds |
+| Sleet (rain and snow together, freezing rain, snow grains) | Short white slanting streaks |
+| Hail (thunderstorm with hail) | Bright pellets, white skitter on the ground, sharp ticking |
+| Snowfall (or precipitation below about 1°C) | Drifting flakes; close ones are 3–7 px pixel crystals that slowly tumble between + and × |
+
+**Wind sway** is one shared function used by branches, leaves and billboards, so leaves stay on their branches and switching to billboards doesn't pop. Trees bend from the root (sway grows with height squared), and gust waves drift across the forest in the wind direction, so you can see a gust roll through. Each tree has its own gentle oscillation and a little cross-wind wobble, with a small leaf flutter on top. Strength follows the gusts you hear when sound is on. Sway also applies in the shadow pass, so shadows move, and is off when billboards are baked.
 
 Live weather can't run inside the claude.ai artifact, because artifacts block outside requests; the manual sliders still work there.
 
