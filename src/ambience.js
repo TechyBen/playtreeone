@@ -126,6 +126,8 @@ export class Ambience {
     this.gust = 0.4;
     this.gustTarget = 0.4;
     this.gustTc = 3;
+    this.windiness = 0.5; // from live weather: 0 still .. 1 gale
+    this.rain = 0;
   }
 
   start() {
@@ -142,6 +144,7 @@ export class Ambience {
     this.verb.buffer = impulse(ctx, 2.8);
     this.verb.connect(gainNode(ctx, 0.35, this.birdBus));
     this.startWind();
+    this.startRain();
     this.birds = [];
     // A short first rest so the first birds arrive within a minute.
     this.phase = { kind: 'rest', start: ctx.currentTime, end: ctx.currentTime + this.rng.float(15, 40) };
@@ -164,6 +167,53 @@ export class Ambience {
     this.master.gain.setTargetAtTime(this.opts.master, now, 0.1);
     this.windBus.gain.setTargetAtTime(this.opts.wind, now, 0.1);
     this.birdBus.gain.setTargetAtTime(this.opts.birds, now, 0.1);
+  }
+
+  // Live weather: how windy (0..1) and how hard it is raining (0..1).
+  setWeather({ wind, rain }) {
+    if (wind !== undefined) { this.windiness = wind; this.nextGust = 0; }
+    if (rain !== undefined) this.rain = rain;
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    this.rainHiss.gain.setTargetAtTime(0.09 * this.rain, now, 3);
+    this.rainLow.gain.setTargetAtTime(0.05 * this.rain * this.rain, now, 3);
+  }
+
+  // Rain: a soft hiss, a low wash in heavy rain, and scattered drips (in tick).
+  startRain() {
+    const ctx = this.ctx;
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuffer(ctx, 4, false);
+    src.loop = true;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 2600;
+    bp.Q.value = 0.4;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 700;
+    this.rainHiss = gainNode(ctx, 0, this.windBus);
+    this.rainLow = gainNode(ctx, 0, this.windBus);
+    src.connect(bp).connect(this.rainHiss);
+    src.connect(lp).connect(this.rainLow);
+    src.start();
+    this.setWeather({});
+  }
+
+  drip(now) {
+    const ctx = this.ctx, r = this.rng;
+    const o = ctx.createOscillator();
+    const f = r.float(1400, 4200);
+    o.frequency.setValueAtTime(f, now);
+    o.frequency.exponentialRampToValueAtTime(f * 0.6, now + 0.03);
+    const g = gainNode(ctx, 0, null);
+    g.gain.setValueAtTime(0.015 * r.float(0.3, 1), now);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+    const pan = ctx.createStereoPanner();
+    pan.pan.value = r.float(-0.9, 0.9);
+    o.connect(g).connect(pan).connect(this.windBus);
+    o.start(now);
+    o.stop(now + 0.06);
   }
 
   // 0..1 smoothed gust strength, so the trees can sway with what you hear.
@@ -199,14 +249,15 @@ export class Ambience {
     if (now < this.nextGust) return;
     const r = this.rng;
     // Mostly gentle: the walk is pulled toward calm, and swells are rare and capped.
-    let g = Math.min(0.75, Math.max(0.08, this.gustTarget * 0.9 + r.float(-0.25, 0.25)));
+    const cap = 0.45 + 0.6 * this.windiness, loud = 0.5 + this.windiness;
+    let g = Math.min(cap, Math.max(0.08, this.gustTarget * 0.9 + r.float(-0.25, 0.25)));
     if (r.chance(0.15)) g = r.float(0.05, 0.2);
     else if (r.chance(0.05)) g = r.float(0.6, 0.85);
     const dur = r.float(5, 14);
     this.gustTarget = g;
     this.gustTc = dur / 3;
-    this.windBody.gain.setTargetAtTime(0.025 + 0.08 * g, now, this.gustTc);
-    this.windLeaves.gain.setTargetAtTime(0.004 + 0.018 * g ** 1.5, now, this.gustTc);
+    this.windBody.gain.setTargetAtTime((0.025 + 0.08 * g) * loud, now, this.gustTc);
+    this.windLeaves.gain.setTargetAtTime((0.004 + 0.018 * g ** 1.5) * loud, now, this.gustTc);
     this.windFilter.frequency.setTargetAtTime(250 + 500 * g, now, this.gustTc);
     this.nextGust = now + dur;
   }
@@ -215,7 +266,10 @@ export class Ambience {
     const now = this.ctx.currentTime;
     this.windTick(now);
     if (now >= this.phase.end) this.nextPhase(now);
-    const env = this.envelope(now);
+    // Drips: a few per second in steady rain.
+    for (let i = 0, n = this.rng.int(0, Math.round(this.rain * 4)); i < n; i++) this.drip(now + this.rng.float(0, 0.2));
+    // Birds go quiet in rain.
+    const env = this.envelope(now) * (1 - 0.85 * this.rain);
     for (const b of this.birds) {
       if (now < b.next) continue;
       const gap = this.rng.range(SPECIES[b.species].gap) * b.tempo;

@@ -11,20 +11,50 @@
 
 const RAD = Math.PI / 180;
 
-export function sunPosition(date, lat, lon) {
-  const d = date.getTime() / 86400000 - 10957.5; // days since J2000.0
-  const g = (357.529 + 0.98560028 * d) * RAD; // mean anomaly
-  const q = 280.459 + 0.98564736 * d; // mean longitude (deg)
-  const L = (q + 1.915 * Math.sin(g) + 0.02 * Math.sin(2 * g)) * RAD; // ecliptic longitude
-  const e = (23.439 - 0.00000036 * d) * RAD; // obliquity
-  const ra = Math.atan2(Math.cos(e) * Math.sin(L), Math.cos(L));
-  const dec = Math.asin(Math.sin(e) * Math.sin(L));
+const days = date => date.getTime() / 86400000 - 10957.5; // days since J2000.0
+const obliquity = d => (23.439 - 0.00000036 * d) * RAD;
+
+// Right ascension / declination (radians) -> elevation / azimuth (degrees).
+function horizontal(d, ra, dec, lat, lon) {
   const gmst = (18.697374558 + 24.06570982441908 * d) % 24; // hours
   const H = (gmst * 15 + lon) * RAD - ra; // local hour angle
   const phi = lat * RAD;
   const el = Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(H));
   const az = Math.atan2(-Math.sin(H) * Math.cos(dec), Math.sin(dec) * Math.cos(phi) - Math.cos(dec) * Math.sin(phi) * Math.cos(H));
   return { elevation: el / RAD, azimuth: ((az / RAD) + 360) % 360 };
+}
+
+function sunLongitude(d) {
+  const g = (357.529 + 0.98560028 * d) * RAD; // mean anomaly
+  const q = 280.459 + 0.98564736 * d; // mean longitude (deg)
+  return (q + 1.915 * Math.sin(g) + 0.02 * Math.sin(2 * g)) * RAD; // ecliptic longitude
+}
+
+export function sunPosition(date, lat, lon) {
+  const d = days(date), L = sunLongitude(d), e = obliquity(d);
+  const ra = Math.atan2(Math.cos(e) * Math.sin(L), Math.cos(L));
+  const dec = Math.asin(Math.sin(e) * Math.sin(L));
+  return horizontal(d, ra, dec, lat, lon);
+}
+
+// Moon: the Almanac's low-precision series (~0.3 deg), plus parallax, which
+// lowers the moon by up to ~1 deg as seen from the ground. `fraction` is the
+// lit part of the disc (0 new .. 1 full).
+export function moonPosition(date, lat, lon) {
+  const d = days(date), e = obliquity(d);
+  const L = 218.316 + 13.176396 * d; // mean longitude
+  const M = (134.963 + 13.064993 * d) * RAD; // mean anomaly
+  const F = (93.272 + 13.22935 * d) * RAD; // argument of latitude
+  const lam = (L + 6.289 * Math.sin(M)) * RAD; // ecliptic longitude
+  const beta = 5.128 * Math.sin(F) * RAD; // ecliptic latitude
+  const ra = Math.atan2(Math.sin(lam) * Math.cos(e) - Math.tan(beta) * Math.sin(e), Math.cos(lam));
+  const dec = Math.asin(Math.sin(beta) * Math.cos(e) + Math.cos(beta) * Math.sin(e) * Math.sin(lam));
+  const pos = horizontal(d, ra, dec, lat, lon);
+  pos.elevation -= 0.95 * Math.cos(pos.elevation * RAD);
+  const elong = Math.acos(Math.cos(beta) * Math.cos(lam - sunLongitude(d)));
+  pos.fraction = (1 - Math.cos(elong)) / 2;
+  pos.waxing = Math.sin(lam - sunLongitude(d)) > 0;
+  return pos;
 }
 
 // Local sidereal time in radians: which right ascension is due south right now.

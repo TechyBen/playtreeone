@@ -12,8 +12,11 @@ import {
 import { bakeImpostor, makeShadowTarget, renderShadowMap } from './impostor.js';
 import { Pipeline } from './post.js';
 import { Ambience } from './ambience.js';
-import { sunPosition, estimateLocation, daylight, siderealTime } from './sun.js';
+import { sunPosition, moonPosition, estimateLocation, daylight, siderealTime } from './sun.js';
 import { makeStars } from './stars.js';
+import { makeMoon } from './moon.js';
+import { makePrecip } from './precip.js';
+import { fetchWeather, cachedWeather, lookupTown, toScene, round1 } from './weather.js';
 import { Rng, fbm, hash2 } from './rng.js';
 
 // Palette hex values are used as-is (no sRGB<->linear conversion): PS1 style.
@@ -38,7 +41,9 @@ const params = {
   // sound
   sound: false, volume: 0.6, windVolume: 0.35, birdVolume: 0.6,
   // real-time sun (location only used locally for the sun's position)
-  realSun: false, latitude: 51.5, longitude: -0.1, stars: 1,
+  realSun: false, latitude: 51.5, longitude: -0.1, stars: 1, timeShift: 0,
+  // weather: 'off' | 'live' (Open-Meteo) | 'manual' (sliders below)
+  weather: 'off', town: '', wCloud: 0, wRain: 0, wSnow: 0, wVisibility: 0, wWind: 0.5,
 };
 
 // ?saver runs the unattended screensaver mode (see saver.js); a few
@@ -52,6 +57,7 @@ const maxFps = +(query.get('fps') || 0);
   params.latitude = query.has('lat') && isFinite(+query.get('lat')) && query.get('lat') !== '' ? +query.get('lat') : est.lat;
   params.longitude = query.has('lon') && isFinite(+query.get('lon')) && query.get('lon') !== '' ? +query.get('lon') : est.lon;
   params.realSun = query.has('realsun') ? query.get('realsun') !== '0' : SAVER;
+  if (query.get('weather') === '1') params.weather = 'live';
 }
 
 const AREA = 120; // half-size of the forest square, metres
@@ -104,6 +110,10 @@ scene.add(sky);
 
 const stars = makeStars();
 scene.add(stars);
+const moon = makeMoon();
+scene.add(moon);
+const precip = makePrecip();
+scene.add(precip.group);
 
 const motes = (() => {
   const n = 600, r = new Rng(99);
@@ -125,37 +135,57 @@ let variants = [];
 let leafAtlases = {}; // species -> { tex, img }
 
 const preset = () => presetById(params.preset);
+// The sky's clock: real time plus the preview shift (in days).
+const skyNow = () => new Date(Date.now() + params.timeShift * 86400e3);
 
 function dirFrom(elDeg, azDeg) {
   const el = THREE.MathUtils.degToRad(elDeg), az = THREE.MathUtils.degToRad(azDeg);
   return new THREE.Vector3(Math.sin(az) * Math.cos(el), Math.sin(el), -Math.cos(az) * Math.cos(el));
 }
 
+// Weather effects currently applied (see weather.js toScene). `fog` is a
+// density or null (keep the preset's); the rest are 0..1.
+const weather = { scene: { cloud: 0, fog: null, rain: 0, snow: 0, wind: 0.5, label: '' }, status: 'off', fetchedAt: 0 };
+
 // Light for the current sun elevation. Below the horizon the scene dims toward
-// a blue night tint and a weak "moon" opposite the sun takes over, so shadows
-// and light shafts keep working at night.
+// a blue night tint and the real moon takes over as the light (brighter near
+// full), so shadows and light shafts keep working at night. Cloud dims both.
 const NIGHT_TINT = new THREE.Color(0.17, 0.2, 0.32);
 const MOON_COLOR = new THREE.Color(0.62, 0.7, 0.92);
-const light = { dir: new THREE.Vector3(), strength: 1, godrays: 1, day: 1, tint: new THREE.Color(), moon: false };
+const light = {
+  dir: new THREE.Vector3(), strength: 1, godrays: 1, day: 1, tint: new THREE.Color(), moon: false,
+  fog: 0.03, moonPos: null, sunTrue: new THREE.Vector3(),
+};
 function computeLight() {
-  const el = params.sunElevation, ss = THREE.MathUtils.smoothstep;
+  const el = params.sunElevation, ss = THREE.MathUtils.smoothstep, ws = weather.scene;
+  const now = skyNow();
+  const mp = (light.moonPos = moonPosition(now, params.latitude, params.longitude));
+  const st = sunPosition(now, params.latitude, params.longitude);
+  light.sunTrue.copy(dirFrom(st.elevation, st.azimuth));
   light.day = daylight(el);
-  light.tint.copy(NIGHT_TINT).lerp(new THREE.Color(1, 1, 1), light.day);
   light.moon = el < -2;
+  // A moonlit night is a little brighter than a moonless one.
+  const moonUp = ss(mp.elevation, -1, 8) * mp.fraction * (1 - ws.cloud * 0.8);
+  light.tint.copy(NIGHT_TINT).multiplyScalar(0.75 + 0.5 * moonUp).lerp(new THREE.Color(1, 1, 1), light.day);
   if (light.moon) {
-    light.dir.copy(dirFrom(28, params.sunAzimuth + 180));
-    light.strength = 0.22 * (1 - ss(el, -10, -2));
+    const up = mp.elevation > -1;
+    light.dir.copy(up ? dirFrom(Math.max(mp.elevation, 3), mp.azimuth) : dirFrom(60, 0));
+    light.strength = Math.max(0.02, 0.26 * (0.25 + 0.75 * mp.fraction) * ss(mp.elevation, -1, 8)) * (1 - ss(el, -10, -2));
   } else {
     light.dir.copy(dirFrom(el, params.sunAzimuth));
     light.strength = params.sunStrength * ss(el, -2, 6);
   }
-  light.godrays = params.godrays * (light.moon ? 0.35 * (1 - light.day) : Math.max(0.15, ss(el, -2, 4)));
+  light.strength *= 1 - 0.75 * ws.cloud;
+  const shafts = light.moon ? 0.5 * moonUp * (1 - light.day) : Math.max(0.15, ss(el, -2, 4));
+  light.godrays = params.godrays * shafts * Math.pow(1 - ws.cloud, 1.5) * (1 - 0.7 * ws.rain);
+  // Fog: lean toward the reported visibility, thicker in rain and snow.
+  light.fog = (ws.fog === null ? params.fogDensity : params.fogDensity * 0.4 + ws.fog * 0.6) * (1 + 0.6 * ws.rain + 0.8 * ws.snow);
   return light;
 }
 
 // Real-time sun: update elevation/azimuth from the clock and location.
 function updateRealSun() {
-  const { elevation, azimuth } = sunPosition(new Date(), params.latitude, params.longitude);
+  const { elevation, azimuth } = sunPosition(skyNow(), params.latitude, params.longitude);
   params.sunElevation = Math.round(elevation * 10) / 10;
   params.sunAzimuth = Math.round(azimuth * 10) / 10;
 }
@@ -327,12 +357,21 @@ function syncUniforms() {
   else U.uSunColor.value.set(p.sun.color);
   U.uSunStrength.value = L.strength;
   U.uAmbient.value.set(p.ambient).multiply(L.tint);
-  U.uSkyTop.value.set(p.sky.top).multiply(L.tint);
-  U.uSkyHorizon.value.set(p.sky.horizon).multiply(L.tint);
-  stars.material.uniforms.uNight.value = Math.pow(1 - L.day, 1.5);
-  stars.material.uniforms.uStarScale.value = params.stars;
   U.uFogColor.value.set(p.fog.color).multiply(L.tint);
-  U.uFogDensity.value = params.fogDensity;
+  // Overcast skies flatten toward the fog colour.
+  const ws = weather.scene;
+  U.uSkyTop.value.set(p.sky.top).multiply(L.tint).lerp(U.uFogColor.value, ws.cloud * 0.7);
+  U.uSkyHorizon.value.set(p.sky.horizon).multiply(L.tint).lerp(U.uFogColor.value, ws.cloud * 0.5);
+  stars.material.uniforms.uNight.value = Math.pow(1 - L.day, 1.5);
+  stars.material.uniforms.uStarScale.value = params.stars * Math.pow(1 - ws.cloud, 2);
+  const mu = moon.material.uniforms;
+  mu.uMoonDir.value.copy(dirFrom(L.moonPos.elevation, L.moonPos.azimuth));
+  mu.uSunTrue.value.copy(L.sunTrue);
+  mu.uDay.value = L.day;
+  mu.uCloud.value = ws.cloud;
+  precip.set({ rain: ws.rain, snow: ws.snow, wind: ws.wind });
+  api.ambience?.setWeather?.({ rain: ws.rain, wind: ws.wind });
+  U.uFogDensity.value = L.fog;
   U.uFogBase.value = params.fogBase;
   U.uFogFalloff.value = params.fogFalloff;
   U.uFogNoise.value = params.fogNoise;
@@ -341,7 +380,7 @@ function syncUniforms() {
   U.uAffine.value = params.affine ? 1 : 0;
   U.uRampSteps.value = params.rampSteps;
   U.uRampDither.value = params.rampDither;
-  U.uWind.value = params.wind;
+  U.uWind.value = params.wind * (0.4 + 1.2 * ws.wind);
   U.uShadowOn.value = params.shadows ? 1 : 0;
   const key = p.id + ':' + params.rampSteps;
   if (key !== rampKey) {
@@ -352,10 +391,10 @@ function syncUniforms() {
   const pu = pipe.uniforms;
   pu.uGodray.value = L.godrays;
   pu.uSunColor.value.copy(U.uSunColor.value);
-  pu.uFogDensity.value = params.fogDensity;
+  pu.uFogDensity.value = L.fog;
   pu.uBits.value = params.colorBits;
   pu.uDither.value = params.dither;
-  motes.visible = params.motes;
+  motes.visible = params.motes && ws.rain + ws.snow < 0.05;
 }
 
 function applyPreset(id) {
@@ -420,6 +459,7 @@ const rebuild = () => buildForest();
   f.add(params, 'realSun').name('real-time sun').onChange(realSun);
   f.add(params, 'latitude', -66, 66, 0.1).onFinishChange(realSun);
   f.add(params, 'longitude', -180, 180, 0.1).onFinishChange(realSun);
+  f.add(params, 'timeShift', -15, 15, 0.01).name('time shift (days)').onChange(() => { if (params.realSun) updateRealSun(); syncUniforms(); }).onFinishChange(realSun);
   f.add(params, 'sunElevation', -15, 85, 0.1).name('sun elevation').onChange(syncUniforms).onFinishChange(rebakeAll);
   f.add(params, 'sunAzimuth', 0, 360, 0.1).name('sun azimuth').onChange(syncUniforms).onFinishChange(rebakeAll);
   f.add(params, 'sunStrength', 0, 2, 0.05).name('sun strength').onChange(syncUniforms).onFinishChange(rebakeAll);
@@ -457,13 +497,81 @@ const rebuild = () => buildForest();
   f.add(params, 'showAtlases').name('show atlases').onChange(v => (v ? showAtlases() : hideAtlases()));
 }
 
+// ---------------------------------------------------------------- weather
+const CALM = { cloud: 0, fog: null, rain: 0, snow: 0, wind: 0.5, label: '' };
+function applyReading(w, source) {
+  weather.scene = toScene(w);
+  weather.status = `${weather.scene.label} (${source})`;
+}
+async function refreshWeather() {
+  weather.fetchedAt = performance.now();
+  try {
+    const w = await fetchWeather(params.latitude, params.longitude);
+    applyReading(w, 'Open-Meteo ' + new Date(w.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+  } catch (e) {
+    const c = cachedWeather();
+    if (c) applyReading(c, 'cached, offline');
+    else weather.status = 'unavailable (' + e.message + ')';
+  }
+  syncUniforms();
+}
+function applyManualWeather() {
+  const v = params.wVisibility;
+  weather.scene = {
+    cloud: params.wCloud, rain: params.wRain, snow: params.wSnow, wind: params.wWind,
+    fog: v > 0 ? Math.min(0.1, Math.max(0.003, 3.9 / v)) : null, label: 'manual',
+  };
+  weather.status = 'manual';
+  syncUniforms();
+}
+function setWeatherMode() {
+  if (params.weather === 'live') {
+    const c = cachedWeather(1);
+    if (c && Math.abs(c.lat - round1(params.latitude)) < 0.05 && Math.abs(c.lon - round1(params.longitude)) < 0.05) applyReading(c, 'cached');
+    refreshWeather();
+  } else if (params.weather === 'manual') applyManualWeather();
+  else { weather.scene = { ...CALM }; weather.status = 'off'; syncUniforms(); }
+}
+{
+  // Live weather sends only the rounded location (0.1 deg, ~10 km) to Open-Meteo.
+  const f = gui.addFolder('Weather');
+  f.close();
+  f.add(params, 'weather', ['off', 'live', 'manual']).name('weather').onChange(setWeatherMode);
+  f.add(params, 'town').name('town');
+  const look = {
+    async lookUp() {
+      if (!params.town.trim()) return;
+      try {
+        const t = await lookupTown(params.town.trim());
+        Object.assign(params, { town: t.label, latitude: t.lat, longitude: t.lon });
+        weather.status = `found ${t.label} (${t.lat}, ${t.lon})`;
+        if (params.realSun) updateRealSun();
+        syncUniforms();
+        rebakeAll();
+        if (params.weather === 'live') refreshWeather();
+      } catch (e) {
+        weather.status = 'town lookup: ' + e.message;
+      }
+      gui.controllersRecursive().forEach(c => c.updateDisplay());
+    },
+  };
+  f.add(look, 'lookUp').name('look up town');
+  const m = f.addFolder('Manual (for testing)');
+  const manual = () => { if (params.weather === 'manual') applyManualWeather(); };
+  m.add(params, 'wCloud', 0, 1, 0.01).name('cloud').onChange(manual);
+  m.add(params, 'wRain', 0, 1, 0.01).name('rain').onChange(manual);
+  m.add(params, 'wSnow', 0, 1, 0.01).name('snow').onChange(manual);
+  m.add(params, 'wVisibility', 0, 20000, 50).name('visibility m (0 = preset)').onChange(manual);
+  m.add(params, 'wWind', 0, 1, 0.01).name('wind').onChange(manual);
+}
+
 {
   // Browsers only start audio from a click, which ticking the box provides.
   const f = gui.addFolder('Sound');
   let amb = null;
   const vols = () => ({ master: params.volume, wind: params.windVolume, birds: params.birdVolume });
   f.add(params, 'sound').name('forest sounds').onChange(on => {
-    if (on) { amb = new Ambience(vols()); amb.start(); api.ambience = amb; }
+    if (on) { amb = new Ambience(vols()); amb.start(); api.ambience = amb; syncUniforms(); }
     else { amb?.stop(); amb = null; api.ambience = null; }
   });
   f.add(params, 'volume', 0, 1, 0.01).onChange(() => amb?.setVolumes(vols()));
@@ -547,7 +655,7 @@ const hud = document.getElementById('hud');
 const fwd = new THREE.Vector3();
 let last = performance.now(), fpsAcc = 0, fpsN = 0, fps = 0;
 const beforeFrame = []; // (now, dt) callbacks, used by saver mode
-let sunCheckedAt = 0, bakedSun = { az: 0, el: 0 };
+let sunCheckedAt = -1e9, bakedSun = { az: 0, el: 0 };
 
 function frame(now) {
   // Optional frame cap (?fps=30): a screensaver doesn't need 144 Hz all night.
@@ -555,17 +663,20 @@ function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
   renderer.info.reset();
-  // Real-time sun in the normal view: refresh every 10 s, rebake billboards
-  // once the sun has moved a few degrees (about every 12 minutes).
-  if (params.realSun && !SAVER && now - sunCheckedAt > 10000) {
+  // Every 10 s: move the real sun (if on) and the moon. In the normal view,
+  // rebake billboards once the sun has moved a few degrees (~every 12 min);
+  // the screensaver rebakes at each scene change instead.
+  if (now - sunCheckedAt > 10000) {
     sunCheckedAt = now;
-    updateRealSun();
+    if (params.realSun) updateRealSun();
     syncUniforms();
-    if (Math.abs(params.sunAzimuth - bakedSun.az) + Math.abs(params.sunElevation - bakedSun.el) > 3) {
+    if (params.realSun && !SAVER && Math.abs(params.sunAzimuth - bakedSun.az) + Math.abs(params.sunElevation - bakedSun.el) > 3) {
       rebakeAll();
       bakedSun = { az: params.sunAzimuth, el: params.sunElevation };
     }
   }
+  // Live weather every 30 minutes.
+  if (params.weather === 'live' && now - weather.fetchedAt > 30 * 60e3) refreshWeather();
   for (const fn of beforeFrame) fn(now, dt);
   walk(dt);
   controls.update();
@@ -577,7 +688,7 @@ function frame(now) {
   }
   U.uTime.value = now / 1000;
   // Stars turn with the real sidereal time at your location.
-  stars.material.uniforms.uLst.value = siderealTime(new Date(), params.longitude);
+  stars.material.uniforms.uLst.value = siderealTime(skyNow(), params.longitude);
   stars.material.uniforms.uLat.value = THREE.MathUtils.degToRad(params.latitude);
   updateLod();
 
@@ -597,11 +708,11 @@ function frame(now) {
     lightCam.lookAt(c);
     lightCam.updateMatrixWorld();
     sky.visible = false;
-    stars.visible = false;
+    stars.visible = moon.visible = precip.group.visible = false;
     motes.visible = false;
     renderShadowMap(renderer, scene, lightCam, shadowRT, 0.35);
     sky.visible = true;
-    stars.visible = true;
+    stars.visible = moon.visible = precip.group.visible = true;
     motes.visible = params.motes;
   }
 
@@ -617,14 +728,17 @@ function frame(now) {
   hud.textContent =
     `${fps.toFixed(0)} fps  ${U.uRes.value.x}x${U.uRes.value.y}  ` +
     `${(info.triangles / 1000).toFixed(1)}k tris  ${info.calls} draws\n` +
-    `${status.instances} plants, ${variants.length} variants  build ${status.build.toFixed(0)}ms  bake ${status.bake.toFixed(0)}ms`;
+    `${status.instances} plants, ${variants.length} variants  build ${status.build.toFixed(0)}ms  bake ${status.bake.toFixed(0)}ms
+` +
+    (light.moonPos ? `moon ${Math.round(light.moonPos.fraction * 100)}% lit, ${light.moonPos.elevation.toFixed(0)}° up  ·  ` : '') +
+    `weather: ${weather.status}`;
   requestAnimationFrame(frame);
 }
 
 const api = {
   THREE, params, camera, controls, U, pipe, gui, beforeFrame,
   variants: () => variants, buildForest, rebakeAll, applyPreset, syncUniforms, terrainHeight,
-  light, updateRealSun,
+  light, updateRealSun, scene, moon, weather, setWeatherMode,
 };
 // Handy for poking at things from the devtools console.
 window.treeps1 = api;
@@ -638,4 +752,5 @@ if (SAVER) {
 } else {
   applyPreset(params.preset);
 }
+if (params.weather !== 'off') setWeatherMode();
 requestAnimationFrame(frame);

@@ -47,8 +47,7 @@ export function startSaver(api, q) {
   }
 
   let current = null, bootAt = null;
-  let base = { el: 0, az: 0, fog: 0 };
-  let sunAt = 0;
+  let base = { el: 0, az: 0 };
   const fogFrom = new THREE.Color(), fadeCol = new THREE.Color(), black = new THREE.Color(0, 0, 0);
   const look = new THREE.Vector3();
 
@@ -56,7 +55,7 @@ export function startSaver(api, q) {
     const prev = U.uFogColor.value.clone();
     params.seed = p.seed;
     api.applyPreset(p.preset);
-    base = { el: params.sunElevation, az: params.sunAzimuth, fog: params.fogDensity };
+    base = { el: params.sunElevation, az: params.sunAzimuth };
     current = p;
     return prev;
   }
@@ -92,13 +91,12 @@ export function startSaver(api, q) {
     if (boot > fade) { fade = boot; col = black; }
     pipe.uniforms.uFade.value = fade;
     pipe.uniforms.uFadeColor.value.copy(col);
-    U.uFogDensity.value = pipe.uniforms.uFogDensity.value = base.fog * (1 + 3 * fade);
+    // light.fog already includes live weather.
+    U.uFogDensity.value = pipe.uniforms.uFogDensity.value = api.light.fog * (1 + 3 * fade);
 
-    // Sun: the real one from the clock (refreshed every few seconds), or a slow
-    // drift around the preset's sun. Billboards are rebaked at each scene change.
-    if (params.realSun) {
-      if (now - sunAt > 5000) { sunAt = now; api.updateRealSun(); api.syncUniforms(); }
-    } else if (!api.light.moon) {
+    // Sun: the real one (moved by the main loop every 10 s), or a slow drift
+    // around the preset's sun. Billboards are rebaked at each scene change.
+    if (!params.realSun && !api.light.moon) {
       const el = THREE.MathUtils.degToRad(base.el + 2 * Math.sin((TAU * u) / T + p.ph[0]));
       const az = THREE.MathUtils.degToRad(base.az + 8 * Math.sin((TAU * u) / (T * 2) + p.ph[1]));
       U.uSunDir.value.set(Math.sin(az) * Math.cos(el), Math.sin(el), -Math.cos(az) * Math.cos(el));
@@ -106,7 +104,7 @@ export function startSaver(api, q) {
     pipe.uniforms.uGodray.value = api.light.godrays * (0.75 + 0.25 * Math.sin((TAU * u) / 173 + p.ph[2])) * (1 - fade);
 
     // Trees sway with the wind you can hear.
-    if (amb) U.uWind.value = 0.5 + 1.2 * amb.windLevel();
+    if (amb) U.uWind.value = 0.4 + 1.4 * amb.windLevel();
 
     // Camera: slow circle in the clearing, gaze outward, leaning toward the sun.
     const th = p.th0 + (p.dir * u * TAU) / (T * 1.6);
