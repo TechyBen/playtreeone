@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "treeps1",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8173", "--bind", "127.0.0.1", "--directory", "C:/dev/treeps1"],
+      "port": 8173
+    }
+  ]
+}

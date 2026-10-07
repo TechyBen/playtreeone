@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>treeps1</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; color: #ecebf3;
+    font: 12px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  canvas#view { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block;
+    image-rendering: pixelated; image-rendering: crisp-edges; }
+  #presets { position: fixed; top: 12px; left: 12px; display: flex; flex-wrap: wrap; gap: 2px; padding: 4px;
+    max-width: calc(100vw - 300px); border-radius: 999px; background: rgba(18, 18, 26, .45); backdrop-filter: blur(6px); }
+  #presets button { border: 0; background: none; color: inherit; font: inherit; padding: 6px 12px;
+    border-radius: 999px; cursor: pointer; opacity: .75; }
+  #presets button:hover { opacity: 1; }
+  #presets button.on { background: rgba(255, 255, 255, .16); opacity: 1; font-weight: 600; }
+  #hud { position: fixed; left: 12px; bottom: 10px; opacity: .75; white-space: pre;
+    font: 11px/1.5 ui-monospace, Consolas, monospace; text-shadow: 0 1px 2px #000; pointer-events: none; }
+  #help { position: fixed; right: 12px; bottom: 10px; opacity: .6; font-size: 11px; text-shadow: 0 1px 2px #000; pointer-events: none; }
+  #atlas { position: fixed; left: 12px; top: 60px; display: none; max-height: calc(100vh - 120px); overflow: auto;
+    padding: 8px 10px; border-radius: 8px; background: rgba(18, 18, 26, .7); font-size: 11px; }
+  #atlas canvas { display: block; margin: 3px 0 10px; image-rendering: pixelated; background: #0006; }
+  @media (max-width: 700px) { #presets { max-width: calc(100vw - 24px); top: auto; bottom: 48px; } #help { display: none; } }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+    "lil-gui": "https://cdn.jsdelivr.net/npm/lil-gui@0.20.0/dist/lil-gui.esm.min.js"
+  }
+}
+</script>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="presets"></div>
+<div id="atlas"></div>
+<div id="hud"></div>
+<div id="help">drag: orbit · right-drag: pan · wheel: zoom · WASD: walk (shift = run)</div>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
