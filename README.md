@@ -2,6 +2,8 @@
 
 A PS1-style tree rendering experiment for the browser. Low-res, vertex-snapped, palette-dithered forests with fog, chunky shadow-mapped dapple and screen-space god rays. The trees are fully procedural: no photo textures. Leaves are rasterised as tiny "pixel candidate" sprites from code and noise. Branches come from L-system-style growth maths. Distant trees switch to baked billboards.
 
+![Misty Dawn preset with the tuning panel](examples/dash.png)
+
 ## Run
 
 It's a static site with no build step (Three.js and lil-gui load from a CDN through an import map).
@@ -39,4 +41,4 @@ Useful knobs to tune pixel size and density: **pixel height**, **cluster tile px
 
 ## Examples folder
 
-`/examples` holds colour-reference photos. They're kept out of git, since some are Unsplash+ licensed. Only `examples/README.md` is tracked.
+`/examples` holds colour-reference photos. They're kept out of git, since some are Unsplash+ licensed. Only `examples/README.md` and `examples/dash.png` (our own render) are tracked.

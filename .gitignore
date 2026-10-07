@@ -1,5 +1,6 @@
 examples/*
 !examples/README.md
+!examples/dash.png
 *.blend1
 .DS_Store
 Thumbs.db
