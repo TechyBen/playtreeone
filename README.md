@@ -16,17 +16,12 @@ Then open http://localhost:8173. ES modules need a local server; double-clicking
 
 Controls: drag to orbit, right-drag to pan, wheel to zoom, WASD to walk (hold Shift to run). Preset pills are at the top left; every tuning knob is in the panel at the top right.
 
-## Windows screensaver
+## Ambient mode
 
-The Windows host (the `.scr`, its settings dialog and the build script) lives in **[screentreeone](https://github.com/TechyBen/screentreeone)**, which includes this repo as a submodule. Saver mode itself is part of this page (`src/saver.js`, `src/ambience.js`, `src/sun.js`):
-- **Scenes**: every *N* minutes (15 by default), fog rolls in over 20 s, a new preset, seed and camera path load behind it, and the fog clears over 25 s. The schedule is driven by the clock, so every monitor changes in sync.
+Add `?saver` to the URL for a hands-off view with no UI (`src/saver.js`). For example, `http://localhost:8173/?saver&mins=1` changes scene every minute. Click once to allow sound.
+- **Scenes**: every *N* minutes (15 by default), fog rolls in over 20 s, a new preset, seed and camera path load behind it, and the fog clears over 25 s.
 - **Camera**: a slow circle in the clearing, looking out at the trees, with slow head turns, a slight bob and a gently drifting sun.
-- **Panorama**: monitors to the left or right of the primary turn the view by one screen width, so the forest continues across them.
-- **Sound** (procedural, no samples, primary monitor only): wind that wanders between lulls and swells and also drives the tree sway. Birds come in phases: a 30 s fade-in, a few minutes of activity, then about 10 minutes of quiet. Six call types are synthesised. Each bird has its own pitch, tempo and a small repertoire it repeats with variation, and neighbours sometimes answer.
-
-Try saver mode in a browser with `http://localhost:8173/?saver&mins=1`. Click once to allow sound.
-
-Three.js loads from a CDN, so the screensaver needs an internet connection; WebView2's cache usually covers short outages.
+- **Sound** (`src/ambience.js`, procedural, no samples): wind that wanders between lulls and swells and also drives the tree sway. Birds come in phases: a 30 s fade-in, a few minutes of activity, then about 10 minutes of quiet. Six call types are synthesised. Each bird has its own pitch, tempo and a small repertoire it repeats with variation, and neighbours sometimes answer. Sound can also be switched on from the panel in the normal view.
 
 ## How it works
 
