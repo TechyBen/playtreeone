@@ -452,7 +452,10 @@ function walk(dt) {
   if (keys.has('KeyA') || keys.has('ArrowLeft')) m.sub(r);
   if (m.lengthSq() === 0) return;
   m.normalize().multiplyScalar(dt * (keys.has('ShiftLeft') ? 18 : 6));
-  camera.position.add(m);
+  // Follow the terrain so the head (camera + orbit target) keeps its height above ground.
+  const p = camera.position;
+  m.y = terrainHeight(p.x + m.x, p.z + m.z) - terrainHeight(p.x, p.z);
+  p.add(m);
   controls.target.add(m);
 }
 
@@ -468,7 +471,11 @@ function frame(now) {
   walk(dt);
   controls.update();
   const floor = terrainHeight(camera.position.x, camera.position.z) + 0.6;
-  if (camera.position.y < floor) camera.position.y = floor;
+  if (camera.position.y < floor) {
+    // Lift the target too, so the clamp doesn't tilt the view direction.
+    controls.target.y += floor - camera.position.y;
+    camera.position.y = floor;
+  }
   U.uTime.value = now / 1000;
   updateLod();
 
