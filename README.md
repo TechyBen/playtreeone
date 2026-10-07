@@ -43,6 +43,10 @@ Three.js loads from a CDN, so the screensaver needs an internet connection; WebV
 
 Useful knobs to tune pixel size and density: **pixel height**, **cluster tile px** (8–64), **leaf density**, **leaf size**, **palette steps**, **billboard px** and **billboard angles**, and **billboard distance**. Turn on **show atlases** to see the generated leaf tiles and baked billboards.
 
+## Night sky
+
+At night, with the real-time sun on, `src/stars.js` draws about 5,000 real stars down to magnitude 6. They're placed for your latitude and the current sidereal time and tinted by colour index. They fade in at dusk, dim near the horizon and in fog, and twinkle slightly. The catalogue (`src/stardata.js`) is packed from [d3-celestial](https://github.com/ofrohn/d3-celestial)'s Hipparcos-derived `stars.6.json`, © 2015 Olaf Frohn, BSD 3-clause; see [licenses/d3-celestial.txt](licenses/d3-celestial.txt).
+
 ## References
 
 - Honda, *Description of the form of trees by the parameters of the tree-like body* (1971)

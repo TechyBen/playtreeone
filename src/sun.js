@@ -27,6 +27,13 @@ export function sunPosition(date, lat, lon) {
   return { elevation: el / RAD, azimuth: ((az / RAD) + 360) % 360 };
 }
 
+// Local sidereal time in radians: which right ascension is due south right now.
+export function siderealTime(date, lon) {
+  const d = date.getTime() / 86400000 - 10957.5;
+  const gmst = (18.697374558 + 24.06570982441908 * d) % 24;
+  return (((gmst * 15 + lon) % 360) + 360) % 360 * RAD;
+}
+
 // Representative [lat, lon] for common IANA zones (rounded: city level at most).
 const ZONES = {
   'Europe/London': [51.5, -0.1], 'Europe/Dublin': [53.3, -6.3], 'Europe/Lisbon': [38.7, -9.1],

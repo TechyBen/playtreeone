@@ -12,7 +12,8 @@ import {
 import { bakeImpostor, makeShadowTarget, renderShadowMap } from './impostor.js';
 import { Pipeline } from './post.js';
 import { Ambience } from './ambience.js';
-import { sunPosition, estimateLocation, daylight } from './sun.js';
+import { sunPosition, estimateLocation, daylight, siderealTime } from './sun.js';
+import { makeStars } from './stars.js';
 import { Rng, fbm, hash2 } from './rng.js';
 
 // Palette hex values are used as-is (no sRGB<->linear conversion): PS1 style.
@@ -37,7 +38,7 @@ const params = {
   // sound
   sound: false, volume: 0.6, windVolume: 0.35, birdVolume: 0.6,
   // real-time sun (location only used locally for the sun's position)
-  realSun: false, latitude: 51.5, longitude: -0.1,
+  realSun: false, latitude: 51.5, longitude: -0.1, stars: 1,
 };
 
 // ?saver runs the unattended screensaver mode (see saver.js); a few
@@ -100,6 +101,9 @@ const sky = new THREE.Mesh(new THREE.SphereGeometry(400, 24, 12), makeSkyMateria
 sky.frustumCulled = false;
 sky.renderOrder = -1;
 scene.add(sky);
+
+const stars = makeStars();
+scene.add(stars);
 
 const motes = (() => {
   const n = 600, r = new Rng(99);
@@ -325,6 +329,8 @@ function syncUniforms() {
   U.uAmbient.value.set(p.ambient).multiply(L.tint);
   U.uSkyTop.value.set(p.sky.top).multiply(L.tint);
   U.uSkyHorizon.value.set(p.sky.horizon).multiply(L.tint);
+  stars.material.uniforms.uNight.value = Math.pow(1 - L.day, 1.5);
+  stars.material.uniforms.uStarScale.value = params.stars;
   U.uFogColor.value.set(p.fog.color).multiply(L.tint);
   U.uFogDensity.value = params.fogDensity;
   U.uFogBase.value = params.fogBase;
@@ -428,6 +434,7 @@ const rebuild = () => buildForest();
   f.add(params, 'fogBase', -5, 20, 0.5).name('fog base height').onChange(syncUniforms);
   f.add(params, 'fogFalloff', 0, 0.4, 0.005).name('fog falloff').onChange(syncUniforms);
   f.add(params, 'fogNoise', 0, 1, 0.01).name('fog noise').onChange(syncUniforms);
+  f.add(params, 'stars', 0, 4, 0.05).name('star brightness').onChange(syncUniforms);
   f.add(params, 'motes').name('dust motes').onChange(syncUniforms);
   f.add(params, 'wind', 0, 3, 0.05).onChange(syncUniforms);
 }
@@ -569,6 +576,9 @@ function frame(now) {
     camera.position.y = floor;
   }
   U.uTime.value = now / 1000;
+  // Stars turn with the real sidereal time at your location.
+  stars.material.uniforms.uLst.value = siderealTime(new Date(), params.longitude);
+  stars.material.uniforms.uLat.value = THREE.MathUtils.degToRad(params.latitude);
   updateLod();
 
   // Shadow map follows the view, snapped to texels to avoid shimmering.
@@ -587,9 +597,11 @@ function frame(now) {
     lightCam.lookAt(c);
     lightCam.updateMatrixWorld();
     sky.visible = false;
+    stars.visible = false;
     motes.visible = false;
     renderShadowMap(renderer, scene, lightCam, shadowRT, 0.35);
     sky.visible = true;
+    stars.visible = true;
     motes.visible = params.motes;
   }
 
