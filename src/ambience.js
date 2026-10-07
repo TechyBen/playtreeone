@@ -121,7 +121,7 @@ function makePhrase(species, r) {
 
 export class Ambience {
   constructor(opts = {}) {
-    this.opts = { master: 0.6, wind: 0.5, birds: 0.6, activeMins: 3, restMins: 10, ...opts };
+    this.opts = { master: 0.6, wind: 0.35, birds: 0.6, activeMins: 3, restMins: 10, ...opts };
     this.rng = new Rng(opts.seed ?? (Date.now() & 0xffffff));
     this.gust = 0.4;
     this.gustTarget = 0.4;
@@ -198,15 +198,16 @@ export class Ambience {
     this.gust += (this.gustTarget - this.gust) * (1 - Math.exp(-0.2 / this.gustTc));
     if (now < this.nextGust) return;
     const r = this.rng;
-    let g = Math.min(1, Math.max(0.1, this.gustTarget + r.float(-0.35, 0.35)));
-    if (r.chance(0.12)) g = r.float(0.05, 0.2);
-    else if (r.chance(0.08)) g = r.float(0.8, 1);
-    const dur = r.float(4, 12);
+    // Mostly gentle: the walk is pulled toward calm, and swells are rare and capped.
+    let g = Math.min(0.75, Math.max(0.08, this.gustTarget * 0.9 + r.float(-0.25, 0.25)));
+    if (r.chance(0.15)) g = r.float(0.05, 0.2);
+    else if (r.chance(0.05)) g = r.float(0.6, 0.85);
+    const dur = r.float(5, 14);
     this.gustTarget = g;
     this.gustTc = dur / 3;
-    this.windBody.gain.setTargetAtTime(0.06 + 0.22 * g, now, this.gustTc);
-    this.windLeaves.gain.setTargetAtTime(0.01 + 0.05 * g ** 1.5, now, this.gustTc);
-    this.windFilter.frequency.setTargetAtTime(250 + 650 * g, now, this.gustTc);
+    this.windBody.gain.setTargetAtTime(0.025 + 0.08 * g, now, this.gustTc);
+    this.windLeaves.gain.setTargetAtTime(0.004 + 0.018 * g ** 1.5, now, this.gustTc);
+    this.windFilter.frequency.setTargetAtTime(250 + 500 * g, now, this.gustTc);
     this.nextGust = now + dur;
   }
 

@@ -35,6 +35,11 @@ namespace Treeps1Saver
             Number("Bird quiet spell (minutes)", s.BirdRestMinutes, 1, 60, v => s.BirdRestMinutes = v);
             Number("Bird active spell (minutes)", s.BirdActiveMinutes, 1, 20, v => s.BirdActiveMinutes = v);
 
+            Heading("Sun");
+            Check("Follow the real sun (time of day)", s.RealSun, v => s.RealSun = v);
+            TextField("Latitude", s.Latitude, "blank = guess from time zone", v => s.Latitude = v);
+            TextField("Longitude", s.Longitude, "blank = guess from time zone", v => s.Longitude = v);
+
             Heading("Scene");
             Number("Change scene every (minutes)", s.SceneMinutes, 1, 120, v => s.SceneMinutes = v);
             Choice("Multiple monitors", new[] { "panorama", "same", "separate" },
@@ -96,6 +101,20 @@ namespace Treeps1Saver
             box.SelectedIndex = Math.Max(0, Array.IndexOf(values, current));
             box.SelectedIndexChanged += (_, __) => set(values[box.SelectedIndex]);
             Row(label, box);
+        }
+
+        void Check(string label, bool value, Action<bool> set)
+        {
+            var box = new CheckBox { Checked = value, AutoSize = true };
+            box.CheckedChanged += (_, __) => set(box.Checked);
+            Row(label, box);
+        }
+
+        void TextField(string label, string value, string hint, Action<string> set)
+        {
+            var text = new TextBox { Text = value, PlaceholderText = hint };
+            text.TextChanged += (_, __) => set(text.Text.Trim());
+            Row(label, text);
         }
 
         void Folder(string label, string current, Action<string> set)

@@ -12,6 +12,7 @@ import {
 import { bakeImpostor, makeShadowTarget, renderShadowMap } from './impostor.js';
 import { Pipeline } from './post.js';
 import { Ambience } from './ambience.js';
+import { sunPosition, estimateLocation, daylight } from './sun.js';
 import { Rng, fbm, hash2 } from './rng.js';
 
 // Palette hex values are used as-is (no sRGB<->linear conversion): PS1 style.
@@ -34,7 +35,9 @@ const params = {
   leafTile: 32, leafDensity: 1, leafScale: 1,
   showAtlases: false,
   // sound
-  sound: false, volume: 0.6, windVolume: 0.5, birdVolume: 0.6,
+  sound: false, volume: 0.6, windVolume: 0.35, birdVolume: 0.6,
+  // real-time sun (location only used locally for the sun's position)
+  realSun: false, latitude: 51.5, longitude: -0.1,
 };
 
 // ?saver runs the unattended screensaver mode (see saver.js); a few
@@ -43,6 +46,12 @@ const query = new URLSearchParams(location.search);
 const SAVER = query.has('saver');
 if (query.has('px')) params.pixelHeight = +query.get('px') || params.pixelHeight;
 const maxFps = +(query.get('fps') || 0);
+{
+  const est = estimateLocation();
+  params.latitude = query.has('lat') && isFinite(+query.get('lat')) && query.get('lat') !== '' ? +query.get('lat') : est.lat;
+  params.longitude = query.has('lon') && isFinite(+query.get('lon')) && query.get('lon') !== '' ? +query.get('lon') : est.lon;
+  params.realSun = query.has('realsun') ? query.get('realsun') !== '0' : SAVER;
+}
 
 const AREA = 120; // half-size of the forest square, metres
 
@@ -113,10 +122,38 @@ let leafAtlases = {}; // species -> { tex, img }
 
 const preset = () => presetById(params.preset);
 
-function sunDir() {
-  const el = THREE.MathUtils.degToRad(params.sunElevation);
-  const az = THREE.MathUtils.degToRad(params.sunAzimuth);
+function dirFrom(elDeg, azDeg) {
+  const el = THREE.MathUtils.degToRad(elDeg), az = THREE.MathUtils.degToRad(azDeg);
   return new THREE.Vector3(Math.sin(az) * Math.cos(el), Math.sin(el), -Math.cos(az) * Math.cos(el));
+}
+
+// Light for the current sun elevation. Below the horizon the scene dims toward
+// a blue night tint and a weak "moon" opposite the sun takes over, so shadows
+// and light shafts keep working at night.
+const NIGHT_TINT = new THREE.Color(0.17, 0.2, 0.32);
+const MOON_COLOR = new THREE.Color(0.62, 0.7, 0.92);
+const light = { dir: new THREE.Vector3(), strength: 1, godrays: 1, day: 1, tint: new THREE.Color(), moon: false };
+function computeLight() {
+  const el = params.sunElevation, ss = THREE.MathUtils.smoothstep;
+  light.day = daylight(el);
+  light.tint.copy(NIGHT_TINT).lerp(new THREE.Color(1, 1, 1), light.day);
+  light.moon = el < -2;
+  if (light.moon) {
+    light.dir.copy(dirFrom(28, params.sunAzimuth + 180));
+    light.strength = 0.22 * (1 - ss(el, -10, -2));
+  } else {
+    light.dir.copy(dirFrom(el, params.sunAzimuth));
+    light.strength = params.sunStrength * ss(el, -2, 6);
+  }
+  light.godrays = params.godrays * (light.moon ? 0.35 * (1 - light.day) : Math.max(0.15, ss(el, -2, 4)));
+  return light;
+}
+
+// Real-time sun: update elevation/azimuth from the clock and location.
+function updateRealSun() {
+  const { elevation, azimuth } = sunPosition(new Date(), params.latitude, params.longitude);
+  params.sunElevation = Math.round(elevation * 10) / 10;
+  params.sunAzimuth = Math.round(azimuth * 10) / 10;
 }
 
 function disposeForest() {
@@ -145,6 +182,7 @@ function bake(v) {
 function rebakeAll() {
   const t0 = performance.now();
   variants.forEach(bake);
+  bakedSun = { az: params.sunAzimuth, el: params.sunElevation };
   status.bake = performance.now() - t0;
 }
 
@@ -246,6 +284,7 @@ function buildForest() {
     v.far.count = 0;
     forest.add(v.far);
   }
+  bakedSun = { az: params.sunAzimuth, el: params.sunElevation };
   status.build = performance.now() - t0;
   status.instances = variants.reduce((s, v) => s + v.instances.length, 0);
   if (params.showAtlases) showAtlases();
@@ -278,13 +317,15 @@ function updateLod() {
 let rampKey = '';
 function syncUniforms() {
   const p = preset();
-  U.uSunDir.value.copy(sunDir());
-  U.uSunColor.value.set(p.sun.color);
-  U.uSunStrength.value = params.sunStrength;
-  U.uAmbient.value.set(p.ambient);
-  U.uSkyTop.value.set(p.sky.top);
-  U.uSkyHorizon.value.set(p.sky.horizon);
-  U.uFogColor.value.set(p.fog.color);
+  const L = computeLight();
+  U.uSunDir.value.copy(L.dir);
+  if (L.moon) U.uSunColor.value.copy(MOON_COLOR);
+  else U.uSunColor.value.set(p.sun.color);
+  U.uSunStrength.value = L.strength;
+  U.uAmbient.value.set(p.ambient).multiply(L.tint);
+  U.uSkyTop.value.set(p.sky.top).multiply(L.tint);
+  U.uSkyHorizon.value.set(p.sky.horizon).multiply(L.tint);
+  U.uFogColor.value.set(p.fog.color).multiply(L.tint);
   U.uFogDensity.value = params.fogDensity;
   U.uFogBase.value = params.fogBase;
   U.uFogFalloff.value = params.fogFalloff;
@@ -303,8 +344,8 @@ function syncUniforms() {
     rampKey = key;
   }
   const pu = pipe.uniforms;
-  pu.uGodray.value = params.godrays;
-  pu.uSunColor.value.set(p.sun.color);
+  pu.uGodray.value = L.godrays;
+  pu.uSunColor.value.copy(U.uSunColor.value);
   pu.uFogDensity.value = params.fogDensity;
   pu.uBits.value = params.colorBits;
   pu.uDither.value = params.dither;
@@ -314,10 +355,12 @@ function syncUniforms() {
 function applyPreset(id) {
   const p = presetById(id);
   Object.assign(params, {
-    preset: p.id,
-    sunElevation: p.sun.elevation, sunAzimuth: p.sun.azimuth, sunStrength: p.sun.strength, godrays: p.sun.godrays,
+    preset: p.id, sunStrength: p.sun.strength, godrays: p.sun.godrays,
     fogDensity: p.fog.density, fogBase: p.fog.base, fogFalloff: p.fog.falloff, fogNoise: p.fog.noise,
   });
+  // With the real-time sun on, the clock decides where the sun is, not the preset.
+  if (params.realSun) updateRealSun();
+  else Object.assign(params, { sunElevation: p.sun.elevation, sunAzimuth: p.sun.azimuth });
   syncUniforms();
   gui?.controllersRecursive().forEach(c => c.updateDisplay());
   document.querySelectorAll('#presets button').forEach(b => b.classList.toggle('on', b.dataset.id === p.id));
@@ -362,8 +405,17 @@ const rebuild = () => buildForest();
 }
 {
   const f = gui.addFolder('Light & fog');
-  f.add(params, 'sunElevation', 2, 85, 1).name('sun elevation').onChange(syncUniforms).onFinishChange(rebakeAll);
-  f.add(params, 'sunAzimuth', -180, 180, 1).name('sun azimuth').onChange(syncUniforms).onFinishChange(rebakeAll);
+  const realSun = () => {
+    if (params.realSun) updateRealSun();
+    syncUniforms();
+    rebakeAll();
+    gui.controllersRecursive().forEach(c => c.updateDisplay());
+  };
+  f.add(params, 'realSun').name('real-time sun').onChange(realSun);
+  f.add(params, 'latitude', -66, 66, 0.1).onFinishChange(realSun);
+  f.add(params, 'longitude', -180, 180, 0.1).onFinishChange(realSun);
+  f.add(params, 'sunElevation', -15, 85, 0.1).name('sun elevation').onChange(syncUniforms).onFinishChange(rebakeAll);
+  f.add(params, 'sunAzimuth', 0, 360, 0.1).name('sun azimuth').onChange(syncUniforms).onFinishChange(rebakeAll);
   f.add(params, 'sunStrength', 0, 2, 0.05).name('sun strength').onChange(syncUniforms).onFinishChange(rebakeAll);
   f.add(params, 'godrays', 0, 2, 0.05).name('god rays').onChange(syncUniforms);
   f.add(params, 'shadows').onChange(syncUniforms);
@@ -488,6 +540,7 @@ const hud = document.getElementById('hud');
 const fwd = new THREE.Vector3();
 let last = performance.now(), fpsAcc = 0, fpsN = 0, fps = 0;
 const beforeFrame = []; // (now, dt) callbacks, used by saver mode
+let sunCheckedAt = 0, bakedSun = { az: 0, el: 0 };
 
 function frame(now) {
   // Optional frame cap (?fps=30): a screensaver doesn't need 144 Hz all night.
@@ -495,6 +548,17 @@ function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
   renderer.info.reset();
+  // Real-time sun in the normal view: refresh every 10 s, rebake billboards
+  // once the sun has moved a few degrees (about every 12 minutes).
+  if (params.realSun && !SAVER && now - sunCheckedAt > 10000) {
+    sunCheckedAt = now;
+    updateRealSun();
+    syncUniforms();
+    if (Math.abs(params.sunAzimuth - bakedSun.az) + Math.abs(params.sunElevation - bakedSun.el) > 3) {
+      rebakeAll();
+      bakedSun = { az: params.sunAzimuth, el: params.sunElevation };
+    }
+  }
   for (const fn of beforeFrame) fn(now, dt);
   walk(dt);
   controls.update();
@@ -548,6 +612,7 @@ function frame(now) {
 const api = {
   THREE, params, camera, controls, U, pipe, gui, beforeFrame,
   variants: () => variants, buildForest, rebakeAll, applyPreset, syncUniforms, terrainHeight,
+  light, updateRealSun,
 };
 // Handy for poking at things from the devtools console.
 window.treeps1 = api;

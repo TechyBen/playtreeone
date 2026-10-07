@@ -9,7 +9,7 @@ namespace Treeps1Saver
     public class Settings
     {
         public int MasterVolume { get; set; } = 60;
-        public int WindVolume { get; set; } = 50;
+        public int WindVolume { get; set; } = 35;
         public int BirdVolume { get; set; } = 60;
         public int SceneMinutes { get; set; } = 15;
         public int BirdRestMinutes { get; set; } = 10;
@@ -18,6 +18,10 @@ namespace Treeps1Saver
         public int PixelHeight { get; set; } = 240;
         public int MaxFps { get; set; } = 30;
         public string WebFolder { get; set; } = "";
+        public bool RealSun { get; set; } = true;
+        // Blank = estimate from the time zone. Only used locally for the sun's position.
+        public string Latitude { get; set; } = "";
+        public string Longitude { get; set; } = "";
 
         static string FilePath => Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "treeps1", "saver.json");
@@ -52,7 +56,16 @@ namespace Treeps1Saver
                 $"&screen={screen}&pan={pan}&pa={primaryAspect.ToString("F4", c)}&layout={Layout}" +
                 $"&audio={(audio ? 1 : 0)}&vol={MasterVolume}&wind={WindVolume}&birds={BirdVolume}" +
                 $"&mins={SceneMinutes}&rest={BirdRestMinutes}&active={BirdActiveMinutes}" +
-                $"&px={PixelHeight}&fps={MaxFps}";
+                $"&px={PixelHeight}&fps={MaxFps}&realsun={(RealSun ? 1 : 0)}" +
+                Coord("lat", Latitude, 90) + Coord("lon", Longitude, 180);
+        }
+
+        static string Coord(string key, string text, double limit)
+        {
+            var c = CultureInfo.InvariantCulture;
+            return double.TryParse((text ?? "").Trim().Replace(',', '.'), NumberStyles.Float, c, out var v) && Math.Abs(v) <= limit
+                ? $"&{key}={v.ToString("F2", c)}"
+                : "";
         }
     }
 }

@@ -47,7 +47,8 @@ export function startSaver(api, q) {
   }
 
   let current = null, bootAt = null;
-  let base = { el: 0, az: 0, god: 0, fog: 0 };
+  let base = { el: 0, az: 0, fog: 0 };
+  let sunAt = 0;
   const fogFrom = new THREE.Color(), fadeCol = new THREE.Color(), black = new THREE.Color(0, 0, 0);
   const look = new THREE.Vector3();
 
@@ -55,7 +56,7 @@ export function startSaver(api, q) {
     const prev = U.uFogColor.value.clone();
     params.seed = p.seed;
     api.applyPreset(p.preset);
-    base = { el: params.sunElevation, az: params.sunAzimuth, god: params.godrays, fog: params.fogDensity };
+    base = { el: params.sunElevation, az: params.sunAzimuth, fog: params.fogDensity };
     current = p;
     return prev;
   }
@@ -63,7 +64,7 @@ export function startSaver(api, q) {
   let amb = null;
   if (num('audio', 1)) {
     amb = new Ambience({
-      master: num('vol', 60) / 100, wind: num('wind', 50) / 100, birds: num('birds', 60) / 100,
+      master: num('vol', 60) / 100, wind: num('wind', 35) / 100, birds: num('birds', 60) / 100,
       restMins: num('rest', 10), activeMins: num('active', 3),
     });
     amb.start();
@@ -93,11 +94,16 @@ export function startSaver(api, q) {
     pipe.uniforms.uFadeColor.value.copy(col);
     U.uFogDensity.value = pipe.uniforms.uFogDensity.value = base.fog * (1 + 3 * fade);
 
-    // Slow sun drift and breathing light shafts (impostor lighting stays baked; the drift is small).
-    const el = THREE.MathUtils.degToRad(base.el + 2 * Math.sin((TAU * u) / T + p.ph[0]));
-    const az = THREE.MathUtils.degToRad(base.az + 8 * Math.sin((TAU * u) / (T * 2) + p.ph[1]));
-    U.uSunDir.value.set(Math.sin(az) * Math.cos(el), Math.sin(el), -Math.cos(az) * Math.cos(el));
-    pipe.uniforms.uGodray.value = base.god * (0.75 + 0.25 * Math.sin((TAU * u) / 173 + p.ph[2])) * (1 - fade);
+    // Sun: the real one from the clock (refreshed every few seconds), or a slow
+    // drift around the preset's sun. Billboards are rebaked at each scene change.
+    if (params.realSun) {
+      if (now - sunAt > 5000) { sunAt = now; api.updateRealSun(); api.syncUniforms(); }
+    } else if (!api.light.moon) {
+      const el = THREE.MathUtils.degToRad(base.el + 2 * Math.sin((TAU * u) / T + p.ph[0]));
+      const az = THREE.MathUtils.degToRad(base.az + 8 * Math.sin((TAU * u) / (T * 2) + p.ph[1]));
+      U.uSunDir.value.set(Math.sin(az) * Math.cos(el), Math.sin(el), -Math.cos(az) * Math.cos(el));
+    }
+    pipe.uniforms.uGodray.value = api.light.godrays * (0.75 + 0.25 * Math.sin((TAU * u) / 173 + p.ph[2])) * (1 - fade);
 
     // Trees sway with the wind you can hear.
     if (amb) U.uWind.value = 0.5 + 1.2 * amb.windLevel();
@@ -107,7 +113,8 @@ export function startSaver(api, q) {
     const x = p.cx + Math.cos(th) * p.R, z = p.cz + Math.sin(th) * p.R;
     const y = api.terrainHeight(x, z) + p.eye + 0.1 * Math.sin(u * 0.4 + p.ph[0]);
     const out = Math.atan2(z, x);
-    const sunPsi = Math.atan2(-Math.cos(az), Math.sin(az));
+    const sd = U.uSunDir.value;
+    const sunPsi = Math.atan2(sd.z, sd.x);
     const toSun = Math.atan2(Math.sin(sunPsi - out), Math.cos(sunPsi - out));
     let psi = out + p.bias + toSun * p.sunBias
       + 0.45 * Math.sin((TAU * u) / 97 + p.ph[1]) + 0.2 * Math.sin((TAU * u) / 41 + p.ph[2]);
