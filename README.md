@@ -18,15 +18,7 @@ Controls: drag to orbit, right-drag to pan, wheel to zoom, WASD to walk (hold Sh
 
 ## Windows screensaver
 
-`saver/` holds a small C# WinForms host (WebView2) that turns the page into a dual-monitor screensaver with forest sounds.
-
-```powershell
-.\saver\build.ps1
-```
-
-This needs the .NET 6+ SDK and the WebView2 runtime, which ships with Windows 10/11. It publishes to `%LOCALAPPDATA%\treeps1\saver` and opens Explorer on `treeps1.scr`. Right-click the file and choose **Install**, then set the wait time in Screen Saver Settings. **Settings...** has volume sliders (master, wind, birds), bird quiet and active spell lengths, how often the scene changes, the multi-monitor layout (panorama, same view, or different forests), pixel height and a frame cap. Settings are stored in `%APPDATA%\treeps1\saver.json`.
-
-What it does (`src/saver.js`, `src/ambience.js`):
+The Windows host (the `.scr`, its settings dialog and the build script) lives in **[screentreeone](https://github.com/TechyBen/screentreeone)**, which includes this repo as a submodule. Saver mode itself is part of this page (`src/saver.js`, `src/ambience.js`, `src/sun.js`):
 - **Scenes**: every *N* minutes (15 by default), fog rolls in over 20 s, a new preset, seed and camera path load behind it, and the fog clears over 25 s. The schedule is driven by the clock, so every monitor changes in sync.
 - **Camera**: a slow circle in the clearing, looking out at the trees, with slow head turns, a slight bob and a gently drifting sun.
 - **Panorama**: monitors to the left or right of the primary turn the view by one screen width, so the forest continues across them.

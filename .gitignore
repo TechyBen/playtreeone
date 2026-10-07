@@ -4,5 +4,3 @@ examples/*
 *.blend1
 .DS_Store
 Thumbs.db
-saver/bin/
-saver/obj/
