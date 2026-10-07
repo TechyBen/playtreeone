@@ -21,6 +21,8 @@
   #atlas { position: fixed; left: 12px; top: 60px; display: none; max-height: calc(100vh - 120px); overflow: auto;
     padding: 8px 10px; border-radius: 8px; background: rgba(18, 18, 26, .7); font-size: 11px; }
   #atlas canvas { display: block; margin: 3px 0 10px; image-rendering: pixelated; background: #0006; }
+  body.saver #presets, body.saver #hud, body.saver #help, body.saver #atlas { display: none; }
+  body.saver, body.saver canvas#view { cursor: none; }
   @media (max-width: 700px) { #presets { max-width: calc(100vw - 24px); top: auto; bottom: 48px; } #help { display: none; } }
 </style>
 <script type="importmap">

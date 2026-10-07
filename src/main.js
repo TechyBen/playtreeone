@@ -11,6 +11,7 @@ import {
 } from './materials.js';
 import { bakeImpostor, makeShadowTarget, renderShadowMap } from './impostor.js';
 import { Pipeline } from './post.js';
+import { Ambience } from './ambience.js';
 import { Rng, fbm, hash2 } from './rng.js';
 
 // Palette hex values are used as-is (no sRGB<->linear conversion): PS1 style.
@@ -32,7 +33,16 @@ const params = {
   // leaves
   leafTile: 32, leafDensity: 1, leafScale: 1,
   showAtlases: false,
+  // sound
+  sound: false, volume: 0.6, windVolume: 0.5, birdVolume: 0.6,
 };
+
+// ?saver runs the unattended screensaver mode (see saver.js); a few
+// render settings can also be overridden from the query string.
+const query = new URLSearchParams(location.search);
+const SAVER = query.has('saver');
+if (query.has('px')) params.pixelHeight = +query.get('px') || params.pixelHeight;
+const maxFps = +(query.get('fps') || 0);
 
 const AREA = 120; // half-size of the forest square, metres
 
@@ -388,6 +398,20 @@ const rebuild = () => buildForest();
   f.add(params, 'showAtlases').name('show atlases').onChange(v => (v ? showAtlases() : hideAtlases()));
 }
 
+{
+  // Browsers only start audio from a click, which ticking the box provides.
+  const f = gui.addFolder('Sound');
+  let amb = null;
+  const vols = () => ({ master: params.volume, wind: params.windVolume, birds: params.birdVolume });
+  f.add(params, 'sound').name('forest sounds').onChange(on => {
+    if (on) { amb = new Ambience(vols()); amb.start(); api.ambience = amb; }
+    else { amb?.stop(); amb = null; api.ambience = null; }
+  });
+  f.add(params, 'volume', 0, 1, 0.01).onChange(() => amb?.setVolumes(vols()));
+  f.add(params, 'windVolume', 0, 1, 0.01).name('wind').onChange(() => amb?.setVolumes(vols()));
+  f.add(params, 'birdVolume', 0, 1, 0.01).name('birds').onChange(() => amb?.setVolumes(vols()));
+}
+
 // Debug overlay: leaf atlases (coloured through the palette) and baked impostors.
 const atlasBox = document.getElementById('atlas');
 function hideAtlases() { atlasBox.style.display = 'none'; atlasBox.innerHTML = ''; }
@@ -463,11 +487,15 @@ function walk(dt) {
 const hud = document.getElementById('hud');
 const fwd = new THREE.Vector3();
 let last = performance.now(), fpsAcc = 0, fpsN = 0, fps = 0;
+const beforeFrame = []; // (now, dt) callbacks, used by saver mode
 
 function frame(now) {
+  // Optional frame cap (?fps=30): a screensaver doesn't need 144 Hz all night.
+  if (maxFps && now - last < 1000 / maxFps - 2) { requestAnimationFrame(frame); return; }
   const dt = Math.min(0.1, (now - last) / 1000);
   last = now;
   renderer.info.reset();
+  for (const fn of beforeFrame) fn(now, dt);
   walk(dt);
   controls.update();
   const floor = terrainHeight(camera.position.x, camera.position.z) + 0.6;
@@ -517,9 +545,20 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
-resize();
-applyPreset(params.preset);
-requestAnimationFrame(frame);
-
+const api = {
+  THREE, params, camera, controls, U, pipe, gui, beforeFrame,
+  variants: () => variants, buildForest, rebakeAll, applyPreset, syncUniforms, terrainHeight,
+};
 // Handy for poking at things from the devtools console.
-window.treeps1 = { THREE, params, variants: () => variants, camera, controls, U, buildForest, rebakeAll };
+window.treeps1 = api;
+
+resize();
+if (SAVER) {
+  document.body.classList.add('saver');
+  gui.hide();
+  controls.enabled = false;
+  import('./saver.js').then(m => m.startSaver(api, query));
+} else {
+  applyPreset(params.preset);
+}
+requestAnimationFrame(frame);

@@ -19,6 +19,8 @@ uniform float uFogDensity;
 uniform float uAspect;
 uniform float uBits;
 uniform float uDither;
+uniform float uFade;
+uniform vec3 uFadeColor;
 varying vec2 vUv;
 
 float b2(vec2 p) { return 2.0 * mod(p.x + p.y, 2.0) + p.y; }
@@ -53,6 +55,7 @@ void main() {
     }
     col += uSunColor * (sum / float(N)) * uGodray * uSunVis;
   }
+  col = mix(col, uFadeColor, uFade);
   float levels = exp2(uBits) - 1.0;
   col = floor(col * levels + 0.5 + (bayer4(gl_FragCoord.xy) - 0.5) * uDither) / levels;
   gl_FragColor = vec4(col, 1.0);
@@ -80,6 +83,8 @@ export class Pipeline {
       uAspect: { value: 1 },
       uBits: { value: 5 },
       uDither: { value: 1 },
+      uFade: { value: 0 },
+      uFadeColor: { value: new THREE.Color(0, 0, 0) },
     };
     const mat = new THREE.ShaderMaterial({
       uniforms: this.uniforms,

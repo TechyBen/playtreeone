@@ -16,6 +16,26 @@ Then open http://localhost:8173. ES modules need a local server; double-clicking
 
 Controls: drag to orbit, right-drag to pan, wheel to zoom, WASD to walk (hold Shift to run). Preset pills are at the top left; every tuning knob is in the panel at the top right.
 
+## Windows screensaver
+
+`saver/` holds a small C# WinForms host (WebView2) that turns the page into a dual-monitor screensaver with forest sounds.
+
+```powershell
+.\saver\build.ps1
+```
+
+This needs the .NET 6+ SDK and the WebView2 runtime, which ships with Windows 10/11. It publishes to `%LOCALAPPDATA%\treeps1\saver` and opens Explorer on `treeps1.scr`. Right-click the file and choose **Install**, then set the wait time in Screen Saver Settings. **Settings...** has volume sliders (master, wind, birds), bird quiet and active spell lengths, how often the scene changes, the multi-monitor layout (panorama, same view, or different forests), pixel height and a frame cap. Settings are stored in `%APPDATA%\treeps1\saver.json`.
+
+What it does (`src/saver.js`, `src/ambience.js`):
+- **Scenes**: every *N* minutes (15 by default), fog rolls in over 20 s, a new preset, seed and camera path load behind it, and the fog clears over 25 s. The schedule is driven by the clock, so every monitor changes in sync.
+- **Camera**: a slow circle in the clearing, looking out at the trees, with slow head turns, a slight bob and a gently drifting sun.
+- **Panorama**: monitors to the left or right of the primary turn the view by one screen width, so the forest continues across them.
+- **Sound** (procedural, no samples, primary monitor only): wind that wanders between lulls and swells and also drives the tree sway. Birds come in phases: a 30 s fade-in, a few minutes of activity, then about 10 minutes of quiet. Six call types are synthesised. Each bird has its own pitch, tempo and a small repertoire it repeats with variation, and neighbours sometimes answer.
+
+Try saver mode in a browser with `http://localhost:8173/?saver&mins=1`. Click once to allow sound.
+
+Three.js loads from a CDN, so the screensaver needs an internet connection; WebView2's cache usually covers short outages.
+
 ## How it works
 
 | Stage | File | Notes |
