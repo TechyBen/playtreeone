@@ -47,6 +47,7 @@ attribute vec2 aRaDec;
 attribute vec2 aMagBv;
 varying vec3 vCol;
 varying float vB;
+varying float vTw;
 void main() {
   // Equatorial -> horizontal (azimuth clockwise from north; -Z is north, +X east).
   float H = uLst - aRaDec.x, d = aRaDec.y;
@@ -59,9 +60,15 @@ void main() {
 
   float mag = aMagBv.x, bv = aMagBv.y;
   float flux = pow(10.0, -0.4 * (mag - 2.0)); // magnitude 2 = 1.0
-  float twinkle = 1.0 + 0.15 * sin(uTime * (2.0 + fract(mag * 7.13) * 3.0) + aRaDec.x * 50.0);
   float horizon = smoothstep(0.0, 0.2, sinAlt); // extinction near the horizon
-  vB = min(flux, 3.0) * uNight * horizon * exp(-uFogDensity * 25.0) * twinkle * uStarScale;
+  vB = min(flux, 3.0) * uNight * horizon * exp(-uFogDensity * 25.0) * uStarScale;
+  // Twinkle: a slow, soft swell (10-25 s, two waves so it never repeats),
+  // a little stronger low in the sky. It only tints the star; it never
+  // decides whether the star is drawn, so nothing blinks out.
+  float ph = aRaDec.x * 37.0 + aRaDec.y * 19.0;
+  float w1 = 0.25 + 0.35 * fract(ph * 0.173), w2 = 0.4 + 0.3 * fract(ph * 0.311);
+  float amp = 0.05 + 0.1 * (1.0 - smoothstep(0.1, 0.6, sinAlt));
+  vTw = 1.0 + amp * (0.6 * sin(uTime * w1 + ph) + 0.4 * sin(uTime * w2 + ph * 1.7));
 
   // B-V colour index: blue-white (hot) .. white .. orange (cool).
   vec3 hot = vec3(0.72, 0.82, 1.0), sunlike = vec3(1.0, 0.96, 0.88), cool = vec3(1.0, 0.72, 0.48);
@@ -73,10 +80,11 @@ void main() {
     fragmentShader: /* glsl */ `
 varying vec3 vCol;
 varying float vB;
+varying float vTw;
 void main() {
   if (vB < 0.04) discard;
   // A floor keeps faint stars as visible single pixels after 5-bit quantising.
-  gl_FragColor = vec4(vCol * (0.16 + 0.8 * min(vB, 1.0)), 1.0);
+  gl_FragColor = vec4(vCol * (0.16 + 0.8 * min(vB, 1.0)) * vTw, 1.0);
 }`,
     transparent: true,
     blending: THREE.AdditiveBlending,

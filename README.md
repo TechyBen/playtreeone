@@ -45,11 +45,11 @@ Useful knobs to tune pixel size and density: **pixel height**, **cluster tile px
 
 ## Night sky
 
-At night, with the real-time sun on, `src/stars.js` draws about 5,000 real stars down to magnitude 6. They're placed for your latitude and the current sidereal time and tinted by colour index. They fade in at dusk, dim near the horizon and in fog, and twinkle slightly. The catalogue (`src/stardata.js`) is packed from [d3-celestial](https://github.com/ofrohn/d3-celestial)'s Hipparcos-derived `stars.6.json`, © 2015 Olaf Frohn, BSD 3-clause; see [licenses/d3-celestial.txt](licenses/d3-celestial.txt).
+At night, with the real-time sun on, `src/stars.js` draws about 5,000 real stars down to magnitude 6. They're placed for your latitude and the current sidereal time and tinted by colour index. They fade in at dusk and dim near the horizon and in fog. Twinkling is a slow, soft swell of ±5–15% over 10–25 seconds (stronger low in the sky), so no star ever blinks out. The catalogue (`src/stardata.js`) is packed from [d3-celestial](https://github.com/ofrohn/d3-celestial)'s Hipparcos-derived `stars.6.json`, © 2015 Olaf Frohn, BSD 3-clause; see [licenses/d3-celestial.txt](licenses/d3-celestial.txt).
 
 ## Moon
 
-`src/sun.js` also computes the moon's position and phase (the Almanac's low-precision series, about 0.3°, with parallax). `src/moon.js` draws it as a chunky pixel disc about 4× its real size so it reads at 240 lines. Each pixel is shaded as a sphere lit by the true sun direction, so the phase and the tilt of the crescent come out right. At night the real moon is the light source: moonlit shadows and faint moonbeams, with brighter nights near full moon. It also shows faintly in the daytime sky. The **time shift (days)** slider moves the sun, moon and stars together to preview other nights.
+`src/sun.js` also computes the moon's position and phase (the Almanac's low-precision series, about 0.3°, with parallax). `src/moon.js` draws it at its true size, about 0.5° across, which is roughly 2 pixels at 240 lines; the sky's glow gives it a soft halo. Each pixel is shaded as a sphere lit by the true sun direction, so at higher pixel heights the phase and the tilt of the crescent show. At a pixel or two, its brightness follows the lit fraction instead. At night the real moon is the light source: moonlit shadows and faint moonbeams, with brighter nights near full moon. It also shows faintly in the daytime sky. The **time shift (days)** slider moves the sun, moon and stars together to preview other nights.
 
 ## Weather
 

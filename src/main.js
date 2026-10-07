@@ -369,6 +369,7 @@ function syncUniforms() {
   mu.uSunTrue.value.copy(L.sunTrue);
   mu.uDay.value = L.day;
   mu.uCloud.value = ws.cloud;
+  mu.uFraction.value = L.moonPos.fraction;
   precip.set({ rain: ws.rain, snow: ws.snow, wind: ws.wind });
   api.ambience?.setWeather?.({ rain: ws.rain, wind: ws.wind });
   U.uFogDensity.value = L.fog;
