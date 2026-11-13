@@ -18,7 +18,7 @@ Controls: drag to orbit, right-drag to pan, wheel to zoom, WASD to walk (hold Sh
 
 ## Ambient mode
 
-Add `?saver` to the URL for a hands-off view with no UI (`src/saver.js`). For example, `http://localhost:8173/?saver&mins=1` changes scene every minute. Click once to allow sound.
+Add `?saver` to the URL for a hands-off view with no UI (`src/saver.js`). Scenes come in two styles: the original six are *sparse* (open woods around a wide clearing), and *dense* has a version of each of those plus Fern Hollow and Moss Ravine (closer stands, trails, slopes, ferns and moss). `&style=sparse` or `&style=dense` limits the rotation to one style. For example, `http://localhost:8173/?saver&mins=1` changes scene every minute. Click once to allow sound.
 - **Scenes**: every *N* minutes (15 by default), fog rolls in over 20 s, a new preset, seed and camera path load behind it, and the fog clears over 25 s.
 - **Camera**: a slow circle in the clearing, looking out at the trees, with slow head turns, a slight bob and a gently drifting sun.
 - **Sound** (`src/ambience.js`, procedural, no samples): wind that wanders between lulls and swells and also drives the tree sway. Birds come in phases: a 30 s fade-in, a few minutes of activity, then about 10 minutes of quiet. Six call types are synthesised. Each bird has its own pitch, tempo and a small repertoire it repeats with variation, and neighbours sometimes answer. Sound can also be switched on from the panel in the normal view.

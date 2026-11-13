@@ -7,11 +7,12 @@
 //  - within a scene the camera circles slowly inside the clearing, looking out
 //    at the trees, with slow head turns, a slight bob and a drifting sun
 //
-// Query options: mins, layout (panorama | same | separate), screen, pan
+// Query options: mins, style (sparse | dense: which scenes to rotate through;
+// all when unset), layout (panorama | same | separate), screen, pan
 // (monitor offset from the primary: -1 = left), pa (primary aspect),
 // audio (0/1), vol, wind, birds (0-100), rest, active (bird phase minutes).
 
-import { PRESETS } from './presets.js';
+import { presetsOfStyle } from './presets.js';
 import { Rng, hash2 } from './rng.js';
 import { Ambience } from './ambience.js';
 
@@ -25,17 +26,18 @@ export function startSaver(api, q) {
   const T = Math.max(60, num('mins', 15) * 60);
   const screen = num('screen', 0), pan = num('pan', 0), primaryAspect = num('pa', 0);
   const layout = q.get('layout') || 'panorama';
+  const SCENES = presetsOfStyle(q.get('style'));
   const salt = layout === 'separate' ? screen * 7919 : 0;
 
   function plan(slot) {
     const r = new Rng(Math.floor(hash2(slot, 17, 4242 + salt) * 2 ** 31));
-    const base = s => Math.floor(hash2(s, 3, 99 + salt) * PRESETS.length);
+    const base = s => Math.floor(hash2(s, 3, 99 + salt) * SCENES.length);
     let idx = base(slot);
-    if (idx === base(slot - 1)) idx = (idx + 1) % PRESETS.length;
+    if (idx === base(slot - 1)) idx = (idx + 1) % SCENES.length;
     const high = r.chance(0.2);
-    return {
+    const p = {
       slot,
-      preset: PRESETS[idx].id,
+      preset: SCENES[idx].id,
       seed: r.int(1, 9999),
       cx: r.float(-2, 2), cz: r.float(-2, 2), R: r.float(3, 5.5),
       th0: r.float(0, TAU), dir: r.chance(0.5) ? 1 : -1,
@@ -44,6 +46,16 @@ export function startSaver(api, q) {
       sunBias: r.float(0.2, 0.7),
       ph: [r.float(0, TAU), r.float(0, TAU), r.float(0, TAU)],
     };
+    // Scenes with a smaller clearing (the dense ones) get a smaller circle,
+    // kept a step inside the trees.
+    const clearing = SCENES[idx].clearing;
+    if (clearing) {
+      const room = clearing - 1.2, k = Math.min(1, (room * 0.3) / 2);
+      p.cx *= k;
+      p.cz *= k;
+      p.R = Math.max(1, Math.min(p.R, room - Math.hypot(p.cx, p.cz)));
+    }
+    return p;
   }
 
   let current = null, bootAt = null;

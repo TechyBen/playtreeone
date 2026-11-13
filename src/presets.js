@@ -118,6 +118,7 @@ export const PRESETS = [
   // a hillside with trails through the dense growth, hazy autumn backlight.
   {
     id: 'fern-hollow', name: 'Fern Hollow',
+    style: 'dense',
     sky: { top: '#aeb4bd', horizon: '#e4e2da' },
     fog: { color: '#c4c2b4', density: 0.026, base: 2, falloff: 0.06, noise: 0.3 },
     sun: { color: '#fff0d4', elevation: 22, azimuth: 15, strength: 0.95, godrays: 0.85 },
@@ -142,6 +143,7 @@ export const PRESETS = [
   // the far side, everything mossier and greener.
   {
     id: 'moss-ravine', name: 'Moss Ravine',
+    style: 'dense',
     sky: { top: '#8e9690', horizon: '#c3c8bf' },
     fog: { color: '#9da596', density: 0.04, base: 3, falloff: 0.05, noise: 0.45 },
     sun: { color: '#e8eedf', elevation: 35, azimuth: -20, strength: 0.45, godrays: 0.25 },
@@ -163,5 +165,50 @@ export const PRESETS = [
     relief: { amp: 14, slope: 0.35, dir: -0.9, ravine: 9 },
   },
 ];
+
+// Dense versions of the original six ("scenes v2"): the same light and
+// palette, plus what the Pacific Northwest scenes added: denser stands with
+// fewer gaps and a smaller clearing, trails through, land with some rise and
+// fall, fern drifts (in each scene's leaf colours, so autumn ones read as
+// bracken) and moss where it suits. The originals are the 'sparse' style.
+const DENSE = {
+  'misty-dawn': {
+    forest: { fir: 0.45, larch: 0.15, beech: 0.3, snag: 0.1 }, shrubs: 1.1, ferns: 0.9,
+    moss: 0.3, ramps: { moss: ['#1a2228', '#2a3a40', '#3e5458', '#5a7270'] },
+    density: 2.0, gaps: 0.24, clearing: 5, trails: 2, relief: { amp: 11, slope: 0.16, dir: 2.2 },
+  },
+  'golden-sunrise': {
+    ferns: 1.0, moss: 0.25, ramps: { moss: ['#1e2414', '#323e1e', '#4c5a2a', '#6e783a'] },
+    density: 2.0, gaps: 0.26, clearing: 5, trails: 3, relief: { amp: 10, slope: 0.22, dir: -0.8 },
+  },
+  'quiet-larch': {
+    ferns: 1.2, moss: 0.35, ramps: { moss: ['#1d3121', '#2d4a2f', '#446e43', '#68945f'] },
+    density: 2.2, gaps: 0.22, clearing: 5, trails: 2, relief: { amp: 13, slope: 0.18, dir: 1.4 },
+  },
+  'autumn-haze': {
+    ferns: 0.8, moss: 0.2, ramps: { moss: ['#2a2a1a', '#45452a', '#62603a', '#827e4c'] },
+    density: 1.9, gaps: 0.26, clearing: 5, trails: 3, relief: { amp: 10, slope: 0.2, dir: 0.3 },
+  },
+  'laurel-gloom': {
+    ferns: 1.6, moss: 0.75, ramps: { moss: ['#14200f', '#22341a', '#365026', '#506e34'] },
+    density: 2.2, gaps: 0.2, clearing: 7, trails: 2, relief: { amp: 14, slope: 0.25, dir: -2.0, ravine: 8 },
+  },
+  'ember-oak': {
+    ferns: 0.4,
+    density: 1.8, gaps: 0.3, clearing: 5, trails: 2, relief: { amp: 9, slope: 0.14, dir: 2.8 },
+  },
+};
+for (const [id, extra] of Object.entries(DENSE)) {
+  const base = PRESETS.find(p => p.id === id);
+  base.style = 'sparse';
+  PRESETS.push({
+    ...base, ...extra, id: `${id}-dense`, name: `${base.name} (dense)`, style: 'dense',
+    ramps: { ...base.ramps, ...(extra.ramps || {}) },
+  });
+}
+
+// The scenes of one style ('sparse' or 'dense'); anything else gives all.
+export const presetsOfStyle = style =>
+  style === 'sparse' || style === 'dense' ? PRESETS.filter(p => (p.style || 'sparse') === style) : PRESETS;
 
 export const presetById = id => PRESETS.find(p => p.id === id) || PRESETS[0];
