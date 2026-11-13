@@ -277,6 +277,23 @@ function growFern(tree, sp, rng, H) {
   addCluster(tree, sp, rng, new V3(0, H * 0.35, 0), 0.8);
 }
 
+// Wildflower: a leafy base card (atlas column 0) and two to four flowering
+// stems (columns 1-3), all standing on the ground.
+function growFlower(tree, sp, rng, H) {
+  const push = (x, y, z, size, variant) =>
+    tree.clusters.push({ p: new V3(x, y, z), size, variant, rot: rng.float(-0.12, 0.12), phase: rng.next() });
+  const b = H * rng.float(0.5, 0.7);
+  push(0, b * 0.45, 0, b, 0);
+  const n = rng.int(2, 4);
+  for (let i = 0; i < n; i++) {
+    const a = rng.float(0, Math.PI * 2), d = H * rng.float(0.05, 0.3), size = H * rng.float(0.85, 1.1);
+    push(Math.cos(a) * d, size * 0.5, Math.sin(a) * d, size, 1 + (i % 3));
+  }
+}
+
+// Species made at run time (the local wildflowers).
+export function defineSpecies(id, spec) { SPECIES[id] = spec; }
+
 export function generateTree(speciesId, seed) {
   const sp = SPECIES[speciesId];
   const rng = new Rng(seed);
@@ -286,6 +303,7 @@ export function generateTree(speciesId, seed) {
   else if (sp.form === 'broad') growBroad(tree, sp, rng, H);
   else if (sp.form === 'snag') growSnag(tree, sp, rng, H);
   else if (sp.form === 'fern') growFern(tree, sp, rng, H);
+  else if (sp.form === 'flower') growFlower(tree, sp, rng, H);
   else growShrub(tree, sp, rng, H);
 
   // Bounds (around the trunk axis, for impostor framing) and crown centre.

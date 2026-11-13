@@ -1,0 +1,120 @@
+{
+  "Actinotus helianthi": [
+    "#f0eee6",
+    "#c8d0a8",
+    "daisy",
+    0.5
+  ],
+  "Agapanthus praecox": [
+    "#6f86d6",
+    "#6f86d6",
+    "umbel",
+    0.8
+  ],
+  "Armeria maritima": [
+    "#e89ac0",
+    "#e89ac0",
+    "cluster",
+    0.25
+  ],
+  "Astragalus alpinus": [
+    "#b8a0e0",
+    "#e8e0f0",
+    "spike",
+    0.2
+  ],
+  "Averrhoa carambola": "skip",
+  "Azorina vidalii": [
+    "#f0c8d8",
+    "#f0c8d8",
+    "bell",
+    0.5
+  ],
+  "Balanophora fungosa": "skip",
+  "Cirsium vulgare": [
+    "#b04a9c",
+    "#b04a9c",
+    "cluster",
+    1.0
+  ],
+  "Cordia lutea": "skip",
+  "Cyclamen graecum": [
+    "#e090b8",
+    "#a83a70",
+    "trumpet",
+    0.2
+  ],
+  "Cyclamen persicum": [
+    "#e07ab0",
+    "#a83a70",
+    "trumpet",
+    0.2
+  ],
+  "Cypripedium acaule": [
+    "#e08aa8",
+    "#f0e0e8",
+    "spike",
+    0.3
+  ],
+  "Heliotropium arboreum": "skip",
+  "Kniphofia foliosa": [
+    "#e8742a",
+    "#f0c040",
+    "spike",
+    1.0
+  ],
+  "Morinda citrifolia": "skip",
+  "Nicotiana glauca": "skip",
+  "Oreomecon leucotricha": [
+    "#f2e27a",
+    "#e8c23a",
+    "cup",
+    0.2
+  ],
+  "Oxalis obtusa": [
+    "#f0a0a8",
+    "#f2d040",
+    "star",
+    0.15
+  ],
+  "Parnassia palustris": [
+    "#f4f2ea",
+    "#e8e0a0",
+    "cup",
+    0.2
+  ],
+  "Pemphis acidula": "skip",
+  "Petasites frigidus": [
+    "#f0e0e4",
+    "#e8d0d8",
+    "cluster",
+    0.3
+  ],
+  "Ptilotus exaltatus": [
+    "#d090c8",
+    "#d090c8",
+    "spike",
+    0.5
+  ],
+  "Schoenia cassiniana": [
+    "#e89ab8",
+    "#e8c23a",
+    "daisy",
+    0.4
+  ],
+  "Silybum marianum": [
+    "#a8509c",
+    "#a8509c",
+    "cluster",
+    1.0
+  ],
+  "Strelitzia nicolai": "skip",
+  "Suriana maritima": "skip",
+  "Trifolium repens": [
+    "#f2f0e8",
+    "#f0e8e0",
+    "cluster",
+    0.15
+  ],
+  "Volkameria mollis": "skip"
+}

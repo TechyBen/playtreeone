@@ -2,11 +2,12 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import GUI from 'lil-gui';
 import { PRESETS, presetById } from './presets.js';
-import { SPECIES, generateTree } from './treegen.js';
+import { SPECIES, generateTree, defineSpecies } from './treegen.js';
+import { localFlowers } from './flowers.js';
 import { buildBranchGeometry, buildLeafGeometry, buildImpostorQuad } from './treemesh.js';
-import { makeLeafAtlas, makeBarkTexture, makeGroundTexture } from './leafgen.js';
+import { makeLeafAtlas, makeFlowerAtlas, makeBarkTexture, makeGroundTexture } from './leafgen.js';
 import {
-  U, buildRampTexture, dataTexture, makeBranchMaterial, makeLeafMaterial, makeImpostorMaterial,
+  U, buildRampTexture, dataTexture, makeBranchMaterial, makeLeafMaterial, makeFlowerMaterial, makeImpostorMaterial,
   makeGroundMaterial, makeSkyMaterial, makeMotesMaterial,
 } from './materials.js';
 import { bakeImpostor, makeShadowTarget, renderShadowMap } from './impostor.js';
@@ -33,7 +34,7 @@ const params = {
   shadows: true, shadowRes: 512, shadowSize: 70,
   motes: true, wind: 1,
   // forest
-  seed: 7, trees: 450, shrubs: 300, ferns: 1400, variants: 3, polyDetail: 1,
+  seed: 7, trees: 450, shrubs: 300, ferns: 1400, flowers: 700, variants: 3, polyDetail: 1,
   lodDistance: 38, impostorViews: 8, impostorRes: 96,
   // leaves
   leafTile: 32, leafDensity: 1, leafScale: 1,
@@ -51,6 +52,8 @@ const params = {
 const query = new URLSearchParams(location.search);
 const SAVER = query.has('saver');
 if (query.has('px')) params.pixelHeight = +query.get('px') || params.pixelHeight;
+// ?flowers=0 turns the wildflowers off; another number sets how many.
+if (query.has('flowers') && isFinite(+query.get('flowers'))) params.flowers = Math.max(0, +query.get('flowers'));
 const maxFps = +(query.get('fps') || 0);
 {
   const est = estimateLocation();
@@ -123,6 +126,7 @@ shapeGround();
 // clear of them, undergrowth mostly does, and the ground shows trodden
 // litter along them (a mask texture over the forest square).
 let trails = [];
+let localFlowerList = [];
 const TRAIL_RES = 256;
 const trailTex = new THREE.DataTexture(new Uint8Array(TRAIL_RES * TRAIL_RES * 4), TRAIL_RES, TRAIL_RES);
 trailTex.magFilter = trailTex.minFilter = THREE.LinearFilter;
@@ -303,6 +307,18 @@ function buildForest() {
   const speciesIds = Object.keys(mix).filter(k => mix[k] > 0);
   if (params.shrubs > 0 && p.shrubs > 0) speciesIds.push('shrub');
   if (params.ferns > 0 && p.ferns > 0) speciesIds.push('fern');
+  // Wildflowers for this place and month (see flowers.js), drawn a little
+  // larger than life so they're found without hunting.
+  localFlowerList = params.flowers > 0 && (p.flowers ?? 1) > 0
+    ? localFlowers(params.latitude, params.longitude, skyNow().getMonth() + 1) : [];
+  localFlowerList.forEach((f, k) => {
+    // Small flowers drawn larger than life so they're found; tall ones true size.
+    const h = f.height < 0.6 ? Math.max(0.3, f.height * 1.4) : f.height;
+    defineSpecies(`flower${k}`, {
+      form: 'flower', leaf: 'flower', shape: f.shape, petal: f.petal, centre: f.centre, ramp: 0, height: [h * 0.8, h * 1.2],
+    });
+    speciesIds.push(`flower${k}`);
+  });
 
   // The scene's land and trails.
   Object.assign(relief, { amp: 8, slope: 0, dir: 0, ravine: 0 }, p.relief || {});
@@ -313,9 +329,15 @@ function buildForest() {
   for (const sid of speciesIds) {
     const sp = SPECIES[sid];
     if (!sp.leaf) continue;
+    const seed = params.seed * 31 + sid.length * 7 + sid.charCodeAt(0) + sid.charCodeAt(sid.length - 1);
+    if (sp.form === 'flower') {
+      const img = makeFlowerAtlas(sp.shape, { tile: params.leafTile, scale: params.leafScale, seed });
+      const tex = dataTexture(img);
+      leafAtlases[sid] = { img, tex, mat: makeFlowerMaterial(tex, sp.petal, sp.centre), kind: sp.shape };
+      continue;
+    }
     const img = makeLeafAtlas(sp.leaf, {
-      tile: params.leafTile, density: params.leafDensity, scale: params.leafScale,
-      seed: params.seed * 31 + sid.length * 7 + sid.charCodeAt(0),
+      tile: params.leafTile, density: params.leafDensity, scale: params.leafScale, seed,
     });
     const tex = dataTexture(img);
     leafAtlases[sid] = { img, tex, mat: makeLeafMaterial(tex, sp.ramp), kind: sp.leaf };
@@ -386,6 +408,30 @@ function buildForest() {
       if (trails.length && trailDist(x, z) < 1.0) continue;
       place('fern', x, z, rng.float(0.8, 1.35));
       i++;
+    }
+  }
+
+  // Wildflowers in clumps of one species, mostly where there's light: round
+  // the clearing, along the edges of trails, and in the forest's gaps.
+  if (localFlowerList.length) {
+    const n = Math.round(params.flowers * (p.flowers ?? 1));
+    const total = localFlowerList.reduce((t, f) => t + f.weight, 0);
+    const clear = p.clearing ?? 9, gaps = (p.gaps ?? 0.36) + 0.06;
+    for (let placed = 0, tries = 0; placed < n && tries < n * 4; tries++) {
+      const a = rng.float(0, Math.PI * 2), r = 2 + Math.pow(rng.next(), 1.6) * (AREA - 2);
+      const x = Math.cos(a) * r, z = Math.sin(a) * r;
+      const td = trails.length ? trailDist(x, z) : Infinity;
+      if (td < 0.8) continue;
+      const open = (r < clear + 6) + (td < 3.5) + (fbm(x * 0.03 + 9, z * 0.03 + 9, 3, params.seed) < gaps);
+      if (rng.next() > 0.12 + 0.3 * open) continue;
+      let w = rng.next() * total, f = 0;
+      while (f < localFlowerList.length - 1 && w > localFlowerList[f].weight) { w -= localFlowerList[f].weight; f++; }
+      for (let i = rng.int(4, 10); i > 0 && placed < n; i--) {
+        const fx = x + rng.float(-1.4, 1.4), fz = z + rng.float(-1.4, 1.4);
+        if (trails.length && trailDist(fx, fz) < 0.7) continue;
+        place(`flower${f}`, fx, fz, rng.float(0.8, 1.2));
+        placed++;
+      }
     }
   }
 
@@ -589,6 +635,7 @@ const rebuild = () => buildForest();
   f.add(params, 'trees', 0, 2000, 10).onFinishChange(rebuild);
   f.add(params, 'shrubs', 0, 2000, 10).onFinishChange(rebuild);
   f.add(params, 'ferns', 0, 4000, 50).onFinishChange(rebuild);
+  f.add(params, 'flowers', 0, 3000, 50).name('wildflowers').onFinishChange(rebuild);
   f.add(params, 'variants', 1, 6, 1).name('variants / species').onFinishChange(rebuild);
   f.add(params, 'polyDetail', 0.5, 2, 0.25).name('branch sides x').onFinishChange(rebuild);
   f.add(params, 'lodDistance', 0, 150, 1).name('billboard distance');
@@ -850,7 +897,7 @@ function frame(now) {
 const api = {
   THREE, params, camera, controls, U, pipe, gui, beforeFrame,
   variants: () => variants, buildForest, rebakeAll, applyPreset, syncUniforms, terrainHeight,
-  light, updateRealSun, scene, moon, weather, setWeatherMode,
+  light, updateRealSun, scene, moon, weather, setWeatherMode, flowers: () => localFlowerList,
 };
 // Handy for poking at things from the devtools console.
 window.treeps1 = api;

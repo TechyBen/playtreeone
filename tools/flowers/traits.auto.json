@@ -1,0 +1,1924 @@
+{
+"Acacia verticillata": "skip",
+"Acaena magellanica": [
+"#9b4946",
+"#9b4946",
+"cup",
+0.3
+],
+"Acanthosicyos horridus": "skip",
+"Actinotus helianthi": [
+"#dee0e0",
+"#dee0e0",
+"umbel",
+0.9
+],
+"Adenium obesum": [
+"#5e6f99",
+"#5e6f99",
+"star",
+0.6
+],
+"Aerva javanica": "skip",
+"Agapanthus praecox": [
+"#d9c257",
+"#d9c257",
+"trumpet",
+0.4
+],
+"Ageratum conyzoides": [
+"#d6d6e0",
+"#e8c23a",
+"daisy",
+0.4
+],
+"Aloe ferox": [
+"#d9a757",
+"#d9a757",
+"spike",
+0.8
+],
+"Alopecurus magellanicus": "skip",
+"Ammocharis tinneana": [
+"#b4677a",
+"#b4677a",
+"trumpet",
+0.4
+],
+"Amorphophallus aphyllus": [
+"#995860",
+"#995860",
+"trumpet",
+0.4
+],
+"Amorphophallus dracontioides": [
+"#d9ab57",
+"#d9ab57",
+"trumpet",
+0.4
+],
+"Amyema quandang": "skip",
+"Anemonastrum villosissimum": [
+"#dee0de",
+"#dee0de",
+"cup",
+0.4
+],
+"Anemonoides nemorosa": [
+"#dae0d5",
+"#e6cb17",
+"cup",
+0.2
+],
+"Anisotome latifolia": [
+"#de559d",
+"#de559d",
+"umbel",
+0.9
+],
+"Antigonon leptopus": [
+"#e73a70",
+"#e73a70",
+"cluster",
+0.5
+],
+"Aquilegia canadensis": [
+"#c9544d",
+"#c9544d",
+"bell",
+0.5
+],
+"Aquilegia coerulea": [
+"#6b5b99",
+"#d9c255",
+"bell",
+0.5
+],
+"Aristolochia watsonii": "skip",
+"Armeria maritima": [
+"#d9af57",
+"#994f4e",
+"cluster",
+0.4
+],
+"Arnebia guttata": [
+"#e1b816",
+"#e1b816",
+"star",
+0.4
+],
+"Arundina graminifolia": [
+"#ddd4e0",
+"#b331a8",
+"spike",
+0.3
+],
+"Asclepias curassavica": [
+"#cd3e1f",
+"#cd3e1f",
+"umbel",
+0.8
+],
+"Asclepias subulata": [
+"#d9c74d",
+"#d9c74d",
+"umbel",
+0.8
+],
+"Asclepias viridis": [
+"#d9c357",
+"#d9c357",
+"umbel",
+0.8
+],
+"Asimina reticulata": "skip",
+"Asteriscus daltonii": [
+"#f2c21e",
+"#d49a12",
+"daisy",
+0.4
+],
+"Astragalus alpinus": [
+"#c86ab8",
+"#c86ab8",
+"spike",
+0.35
+],
+"Asystasia intrusa": [
+"#e0e0d5",
+"#e0e0d5",
+"trumpet",
+0.6
+],
+"Averrhoa carambola": [
+"#c654a2",
+"#d98f57",
+"star",
+0.15
+],
+"Azorella polaris": [
+"#f2f0e4",
+"#f2f0e4",
+"umbel",
+0.9
+],
+"Azorina vidalii": [
+"#d9be57",
+"#d9be57",
+"bell",
+0.4
+],
+"Balanophora fungosa": [
+"#d9bc57",
+"#d9bc57",
+"cup",
+0.4
+],
+"Balsamorhiza sagittata": [
+"#d7e0ca",
+"#e8c23a",
+"daisy",
+0.5
+],
+"Barbarea orthoceras": [
+"#f2e04a",
+"#f2e04a",
+"star",
+0.4
+],
+"Barringtonia asiatica": "skip",
+"Begonia ambodiforahensis": [
+"#d86aa0",
+"#f0d860",
+"cup",
+0.3
+],
+"Begonia annobonensis": [
+"#d86aa0",
+"#f0d860",
+"cup",
+0.3
+],
+"Bejaria imthurnii": [
+"#e4749d",
+"#e4749d",
+"bell",
+0.3
+],
+"Bellardia trixago": [
+"#e2e4e5",
+"#e2e4e5",
+"spike",
+0.35
+],
+"Bellis perennis": [
+"#dce0d3",
+"#e8c23a",
+"daisy",
+0.1
+],
+"Bidens alba": [
+"#e0e0de",
+"#d98516",
+"daisy",
+0.6
+],
+"Bidens microcephala": [
+"#d9b316",
+"#ae7702",
+"daisy",
+0.6
+],
+"Bikkia palauensis": [
+"#d86aa0",
+"#f0d860",
+"cluster",
+0.3
+],
+"Bikkia tetrandra": [
+"#dbe0e0",
+"#dbe0e0",
+"cluster",
+0.3
+],
+"Biophytum umbraculum": [
+"#dab343",
+"#dab343",
+"star",
+0.15
+],
+"Bistorta affinis": [
+"#b3707c",
+"#b3707c",
+"spike",
+0.5
+],
+"Bomarea ovallei": [
+"#ba2d36",
+"#ba2d36",
+"trumpet",
+0.4
+],
+"Brickellia peninsularis": [
+"#d9b957",
+"#ae853b",
+"daisy",
+0.4
+],
+"Bulbophyllum lobbii": [
+"#eaa94e",
+"#eaa94e",
+"spike",
+0.3
+],
+"Burchellia bubalina": [
+"#b1241b",
+"#b1241b",
+"cluster",
+0.3
+],
+"Burmannia disticha": [
+"#674b99",
+"#674b99",
+"cup",
+0.4
+],
+"Caladenia flava": [
+"#d9b316",
+"#d9b316",
+"spike",
+0.3
+],
+"Caladenia tentaculata": [
+"#d9a057",
+"#d9a057",
+"spike",
+0.3
+],
+"Calanthe pulchra": [
+"#f7ac19",
+"#f7ac19",
+"spike",
+0.3
+],
+"Calochortus gunnisonii": [
+"#d9e0da",
+"#d9e0da",
+"cup",
+0.4
+],
+"Calophyllum inophyllum": "skip",
+"Calotropis gigantea": "skip",
+"Calotropis procera": "skip",
+"Caltha palustris": [
+"#f6dc19",
+"#f6dc19",
+"cup",
+0.4
+],
+"Campanula giesekiana": [
+"#8c7be6",
+"#8c7be6",
+"bell",
+0.4
+],
+"Canavalia cathartica": [
+"#c86ab8",
+"#c86ab8",
+"cluster",
+0.35
+],
+"Canavalia sericea": [
+"#d4464c",
+"#d9c957",
+"cluster",
+0.35
+],
+"Capparis sandwichiana": [
+"#dde0d8",
+"#dde0d8",
+"cluster",
+0.4
+],
+"Capparis zoharyi": [
+"#e0dad8",
+"#e0dad8",
+"cluster",
+0.4
+],
+"Cardamine pratensis": [
+"#e0d1de",
+"#e0d1de",
+"star",
+0.4
+],
+"Cassia fistula": "skip",
+"Castilleja elegans": [
+"#d9a257",
+"#d9a257",
+"spike",
+0.4
+],
+"Catharanthus roseus": [
+"#ed89e1",
+"#ed89e1",
+"star",
+0.6
+],
+"Cephalipterum drummondii": [
+"#d7e0ca",
+"#e8c23a",
+"daisy",
+0.4
+],
+"Cerastium alpinum": [
+"#f4f1ea",
+"#f4f1ea",
+"star",
+0.15
+],
+"Cerastium glomeratum": [
+"#dde0da",
+"#dde0da",
+"star",
+0.15
+],
+"Cerastium regelii": [
+"#d8e2df",
+"#d9c91b",
+"star",
+0.15
+],
+"Ceratotheca triloba": [
+"#d7cfe0",
+"#d7cfe0",
+"trumpet",
+0.4
+],
+"Cereus fernambucensis": "skip",
+"Chamaenerion angustifolium": [
+"#a944af",
+"#a944af",
+"spike",
+1.2
+],
+"Chamaenerion latifolium": [
+"#ed6ed9",
+"#ed6ed9",
+"spike",
+1.2
+],
+"Chelidonium asiaticum": [
+"#d86aa0",
+"#f0d860",
+"cup",
+0.5
+],
+"Chenopodiastrum murale": "skip",
+"Cherleria arctica": [
+"#e0e0d8",
+"#e0e0d8",
+"star",
+0.35
+],
+"Chiliotrichum diffusum": [
+"#dde0de",
+"#e8c23a",
+"daisy",
+0.4
+],
+"Cipura paludosa": [
+"#cfcae0",
+"#6d6399",
+"trumpet",
+0.5
+],
+"Cirsium vulgare": [
+"#f2c21e",
+"#d49a12",
+"cluster",
+1.0
+],
+"Cistanche tubulosa": [
+"#d99b30",
+"#d99b30",
+"spike",
+0.35
+],
+"Clappertonia ficifolia": [
+"#db89e5",
+"#db89e5",
+"cup",
+0.8
+],
+"Clematis paniculata": [
+"#e3e1e0",
+"#f7d944",
+"star",
+1.2
+],
+"Clitoria ternatea": [
+"#6456c5",
+"#6456c5",
+"cluster",
+0.35
+],
+"Commelina benghalensis": [
+"#2f7bf2",
+"#2f7bf2",
+"cup",
+0.3
+],
+"Commelina communis": [
+"#408bf2",
+"#f7db19",
+"cup",
+0.3
+],
+"Commelina erecta": [
+"#3b4ade",
+"#3b4ade",
+"cup",
+0.3
+],
+"Commelina forskaolii": [
+"#1c58bb",
+"#1c58bb",
+"cup",
+0.3
+],
+"Commelina madagascarica": [
+"#386bf2",
+"#cad4e0",
+"cup",
+0.3
+],
+"Convolvulus althaeoides": [
+"#d184f2",
+"#d184f2",
+"trumpet",
+0.5
+],
+"Convolvulus arvensis": [
+"#e0d3d5",
+"#e0d3d5",
+"trumpet",
+0.5
+],
+"Convolvulus chinensis": [
+"#c473ba",
+"#dfd0e0",
+"trumpet",
+0.5
+],
+"Copiapoa coquimbana": "skip",
+"Cordia lutea": [
+"#d9bc16",
+"#d9bc16",
+"star",
+0.4
+],
+"Corryocactus erectus": "skip",
+"Corydalis ambigua": [
+"#5962a2",
+"#5962a2",
+"spike",
+0.5
+],
+"Crocosmia × crocosmiiflora": [
+"#f26724",
+"#f26724",
+"spike",
+0.5
+],
+"Cyanthillium cinereum": [
+"#c071b5",
+"#e8c23a",
+"daisy",
+0.4
+],
+"Cyclamen graecum": [
+"#d99557",
+"#d99557",
+"trumpet",
+0.2
+],
+"Cyclamen persicum": [
+"#d98556",
+"#d98556",
+"trumpet",
+0.2
+],
+"Cynorkis purpurascens": [
+"#c476e0",
+"#c476e0",
+"spike",
+0.3
+],
+"Cypripedium acaule": [
+"#d4cce0",
+"#d4cce0",
+"spike",
+0.3
+],
+"Cypripedium guttatum": [
+"#9e3555",
+"#dbdae0",
+"spike",
+0.3
+],
+"Cypripedium parviflorum": [
+"#dfba19",
+"#dfba19",
+"spike",
+0.3
+],
+"Daphne bholua": "skip",
+"Dasiphora fruticosa": [
+"#f7d419",
+"#f7d419",
+"cup",
+0.3
+],
+"Daviesia leptophylla": [
+"#d99e35",
+"#d99e35",
+"cluster",
+0.35
+],
+"Delonix regia": "skip",
+"Dendrobium cuthbertsonii": [
+"#dc3021",
+"#dc3021",
+"spike",
+0.3
+],
+"Dendrobium mirbelianum": [
+"#d9bf2a",
+"#d9bf2a",
+"spike",
+0.3
+],
+"Desmidorchis retrospiciens": [
+"#995281",
+"#995281",
+"star",
+0.6
+],
+"Desmodium uncinatum": [
+"#cf98ea",
+"#d7d1e0",
+"cluster",
+0.35
+],
+"Dianella sandwicensis": [
+"#e4e9d5",
+"#e4e9d5",
+"spike",
+0.7
+],
+"Dianthus chinensis": [
+"#f4f1ea",
+"#f4f1ea",
+"star",
+0.3
+],
+"Dicentra formosa": [
+"#e0cbda",
+"#e0cbda",
+"bell",
+0.5
+],
+"Digitalis purpurea": [
+"#b75891",
+"#b75891",
+"spike",
+1.2
+],
+"Dipterostemon capitatus": [
+"#946099",
+"#946099",
+"bell",
+0.35
+],
+"Disphyma papillatum": [
+"#d9be57",
+"#d9be57",
+"daisy",
+0.15
+],
+"Distimake vitifolius": [
+"#d86aa0",
+"#f0d860",
+"trumpet",
+0.5
+],
+"Dryas integrifolia": [
+"#d9b842",
+"#d9b842",
+"cup",
+0.3
+],
+"Dubautia scabra": [
+"#e0ddd0",
+"#e8c23a",
+"daisy",
+0.4
+],
+"Earina autumnalis": [
+"#dadbe0",
+"#dadbe0",
+"spike",
+0.3
+],
+"Echium horridum": [
+"#992d3e",
+"#992d3e",
+"spike",
+0.4
+],
+"Echium nervosum": [
+"#5d6e99",
+"#5d6e99",
+"spike",
+0.4
+],
+"Echium plantagineum": [
+"#6a52c5",
+"#6a52c5",
+"spike",
+0.4
+],
+"Echium stenosiphon": [
+"#9c384e",
+"#9c384e",
+"spike",
+0.4
+],
+"Elaeis guineensis": "skip",
+"Eleutheranthera ruderalis": [
+"#e0bf16",
+"#b38001",
+"daisy",
+0.4
+],
+"Embothrium coccineum": "skip",
+"Epacris impressa": "skip",
+"Epigaea repens": [
+"#e0dfda",
+"#e0dfda",
+"bell",
+0.3
+],
+"Erigeron rupicola": [
+"#f2c21e",
+"#d49a12",
+"daisy",
+0.4
+],
+"Erodium cicutarium": [
+"#d86aa0",
+"#f0d860",
+"cup",
+0.15
+],
+"Erythrina crista-galli": "skip",
+"Erythrocephalum longifolium": [
+"#c04360",
+"#e8c23a",
+"daisy",
+0.4
+],
+"Eulophia cucullata": [
+"#9e4168",
+"#9e4168",
+"spike",
+0.3
+],
+"Eulophia gracilis": [
+"#c86ab8",
+"#e8d8e8",
+"spike",
+0.3
+],
+"Euphorbia origanoides": [
+"#d9b657",
+"#d9b657",
+"cluster",
+0.35
+],
+"Euploca procumbens": [
+"#d9b83c",
+"#dbe0ca",
+"star",
+0.4
+],
+"Eurybia sibirica": [
+"#d98346",
+"#dcd4e2",
+"daisy",
+0.4
+],
+"Ficaria verna": [
+"#f7d919",
+"#f7d919",
+"cup",
+0.15
+],
+"Fitchia rapensis": [
+"#a53d19",
+"#636399",
+"daisy",
+0.4
+],
+"Flaveria trinervia": [
+"#ddb316",
+"#b17702",
+"daisy",
+0.4
+],
+"Freesia laxa": [
+"#f25f4c",
+"#f25f4c",
+"trumpet",
+0.5
+],
+"Fritillaria camschatcensis": [
+"#d86aa0",
+"#f0d860",
+"bell",
+0.5
+],
+"Fuchsia boliviana": [
+"#d86aa0",
+"#f0d860",
+"cup",
+0.6
+],
+"Fuchsia magellanica": [
+"#d83563",
+"#d83563",
+"cup",
+0.6
+],
+"Funastrum heterophyllum": [
+"#99635c",
+"#99635c",
+"star",
+0.6
+],
+"Gardenia jasminoides": "skip",
+"Gaultheria racemulosa": "skip",
+"Gentiana depressa": [
+"#cfe0e0",
+"#cfe0e0",
+"trumpet",
+0.3
+],
+"Gentiana sedifolia": [
+"#d86aa0",
+"#f0d860",
+"trumpet",
+0.3
+],
+"Gentianella chathamica": [
+"#dfe0d3",
+"#dfe0d3",
+"trumpet",
+0.3
+],
+"Geranium pratense": [
+"#906fbc",
+"#e0ccca",
+"cup",
+0.4
+],
+"Geranium robertianum": [
+"#d86aa0",
+"#f0d860",
+"cup",
+0.4
+],
+"Geranium sylvaticum": [
+"#c97af2",
+"#c97af2",
+"cup",
+0.4
+],
+"Geum glaciale": [
+"#dec316",
+"#d5e0ca",
+"cup",
+0.3
+],
+"Gladiolus laxiflorus": [
+"#d9a448",
+"#e47ba6",
+"spike",
+0.8
+],
+"Glinus lotoides": [
+"#dea159",
+"#dea159",
+"cup",
+0.4
+],
+"Gloriosa superba": [
+"#e86b1a",
+"#e86b1a",
+"trumpet",
+0.4
+],
+"Gomphrena celosioides": "skip",
+"Gossypium darwinii": [
+"#d9b316",
+"#d9b316",
+"cup",
+0.8
+],
+"Guiera senegalensis": "skip",
+"Gymnocalycium gibbosum": "skip",
+"Handroanthus heptaphyllus": "skip",
+"Heliotropium arboreum": [
+"#d7e0ca",
+"#d9c957",
+"cluster",
+0.4
+],
+"Hippobroma longiflora": [
+"#dce3dc",
+"#dce3dc",
+"bell",
+0.4
+],
+"Hydrocotyle leucocephala": [
+"#dfe0d9",
+"#dfe0d9",
+"umbel",
+0.4
+],
+"Hyoscyamus muticus": [
+"#d9bb57",
+"#d9bb57",
+"star",
+0.5
+],
+"Impatiens burtonii": [
+"#e3d5e8",
+"#e3d5e8",
+"trumpet",
+0.9
+],
+"Impatiens hawkeri": [
+"#f56619",
+"#f56619",
+"trumpet",
+0.9
+],
+"Impatiens tricornis": [
+"#e2ca42",
+"#e2ca42",
+"trumpet",
+0.9
+],
+"Ipomoea asarifolia": [
+"#ec5fd2",
+"#d9c852",
+"trumpet",
+0.6
+],
+"Ipomoea cairica": [
+"#a975ce",
+"#a975ce",
+"trumpet",
+0.6
+],
+"Ipomoea indica": [
+"#9770f0",
+"#9770f0",
+"trumpet",
+0.6
+],
+"Ipomoea pes-caprae": [
+"#a65799",
+"#a65799",
+"trumpet",
+0.6
+],
+"Jatropha gossypiifolia": "skip",
+"Kadua affinis": [
+"#d86aa0",
+"#f0d860",
+"cluster",
+0.3
+],
+"Kalmia angustifolia": "skip",
+"Kalmia polifolia": "skip",
+"Kalmia procumbens": "skip",
+"Kniphofia foliosa": [
+"#d9c057",
+"#d6e0ca",
+"spike",
+1.0
+],
+"Lagenophora nudicaulis": [
+"#d9c157",
+"#ae8a3b",
+"daisy",
+0.4
+],
+"Lambertia formosa": "skip",
+"Lambertia inermis": "skip",
+"Lamium album": [
+"#e0e0d4",
+"#e0e0d4",
+"cluster",
+0.25
+],
+"Lamium purpureum": [
+"#bc7075",
+"#d9b057",
+"cluster",
+0.25
+],
+"Lantana camara": [
+"#ed7418",
+"#ed7418",
+"cluster",
+0.4
+],
+"Lathyrus tuberosus": [
+"#aa4e8d",
+"#aa4e8d",
+"cluster",
+0.6
+],
+"Lecocarpus darwinii": [
+"#e1c416",
+"#b48401",
+"daisy",
+0.4
+],
+"Ledothamnus sessiliflorus": [
+"#df7397",
+"#df7397",
+"bell",
+0.3
+],
+"Leptinella plumosa": [
+"#d9ad1c",
+"#cae0d4",
+"daisy",
+0.4
+],
+"Leptospermum scoparium": "skip",
+"Leucaena leucocephala": "skip",
+"Lilium concolor": [
+"#db3021",
+"#db3021",
+"trumpet",
+1.0
+],
+"Lilium philadelphicum": [
+"#e64d22",
+"#e64d22",
+"trumpet",
+1.0
+],
+"Lilium pumilum": [
+"#cc321f",
+"#cc321f",
+"trumpet",
+1.0
+],
+"Luffa aegyptiaca": "skip",
+"Lupinus nootkatensis": [
+"#6762bf",
+"#6762bf",
+"spike",
+0.8
+],
+"Lupinus texensis": [
+"#514c99",
+"#514c99",
+"spike",
+0.8
+],
+"Lysiana subfalcata": "skip",
+"Lysimachia azorica": [
+"#d86aa0",
+"#f0d860",
+"star",
+0.2
+],
+"Maihuenia patagonica": "skip",
+"Malva sylvestris": [
+"#dd63dd",
+"#dd63dd",
+"cup",
+0.6
+],
+"Malvaviscus arboreus": [
+"#f2324e",
+"#f2324e",
+"cup",
+0.8
+],
+"Maranta arundinacea": [
+"#dfe0cc",
+"#dfe0cc",
+"spike",
+0.4
+],
+"Meconopsis horridula": [
+"#4298d0",
+"#4298d0",
+"cup",
+0.5
+],
+"Meconopsis racemosa": [
+"#5773c1",
+"#5773c1",
+"cup",
+0.5
+],
+"Megastylis gigas": [
+"#dbe0d5",
+"#dbe0d5",
+"spike",
+0.3
+],
+"Mertensia maritima": [
+"#6872ad",
+"#e0d7ca",
+"bell",
+0.4
+],
+"Metrosideros collina": "skip",
+"Metrosideros polymorpha": "skip",
+"Micranthes stellaris": [
+"#dbdde0",
+"#994161",
+"star",
+0.25
+],
+"Mimosa pudica": "skip",
+"Monolluma socotrana": [
+"#a82026",
+"#d3e0ca",
+"star",
+0.6
+],
+"Morinda citrifolia": [
+"#d86aa0",
+"#f0d860",
+"cluster",
+0.3
+],
+"Nicolletia trifida": [
+"#e0d0cf",
+"#e8c23a",
+"daisy",
+0.4
+],
+"Nicotiana glauca": [
+"#d9b557",
+"#d6dbe0",
+"star",
+0.5
+],
+"Nymphaea nouchali": "skip",
+"Ochradenus baccatus": [
+"#d9c257",
+"#d9c257",
+"spike",
+0.4
+],
+"Oenothera rosea": [
+"#f27fd7",
+"#f27fd7",
+"cup",
+0.8
+],
+"Olsynium biflorum": [
+"#d9c857",
+"#e0dad2",
+"trumpet",
+0.5
+],
+"Ophrys tenthredinifera": [
+"#c16cb7",
+"#d9b834",
+"spike",
+0.3
+],
+"Opuntia galapageia": "skip",
+"Oreomecon leucotricha": [
+"#d86aa0",
+"#f0d860",
+"cup",
+0.5
+],
+"Oreomecon radicata": [
+"#d86aa0",
+"#f0d860",
+"cup",
+0.5
+],
+"Oreomecon variegata": [
+"#d9ad57",
+"#d9ad57",
+"cup",
+0.5
+],
+"Oxalis barrelieri": [
+"#d9b519",
+"#d6e0d1",
+"star",
+0.15
+],
+"Oxalis corniculata": [
+"#f2ca18",
+"#f2ca18",
+"star",
+0.15
+],
+"Oxalis debilis": [
+"#ae62a0",
+"#ae62a0",
+"star",
+0.15
+],
+"Oxalis enneaphylla": [
+"#d9b957",
+"#dbd4e0",
+"star",
+0.15
+],
+"Oxalis gagneorum": [
+"#d86aa0",
+"#f0d860",
+"star",
+0.15
+],
+"Oxalis obliquifolia": [
+"#f224b9",
+"#d9bb16",
+"star",
+0.15
+],
+"Oxalis obtusa": [
+"#e0dedc",
+"#e0dedc",
+"star",
+0.15
+],
+"Oxalis pes-caprae": [
+"#ebd318",
+"#ebd318",
+"star",
+0.15
+],
+"Oxalis purpurea": [
+"#f24dd4",
+"#d9be16",
+"star",
+0.15
+],
+"Paeonia lactiflora": [
+"#dde2db",
+"#dde2db",
+"cup",
+0.4
+],
+"Pancratium maritimum": [
+"#d9be57",
+"#d9be57",
+"trumpet",
+0.4
+],
+"Parnassia palustris": "skip",
+"Passiflora caerulea": [
+"#dae0db",
+"#d9c357",
+"cup",
+1.0
+],
+"Passiflora glandulosa": [
+"#df2234",
+"#df2234",
+"cup",
+1.0
+],
+"Passiflora incarnata × cincinnata": [
+"#8b5fc6",
+"#9c5894",
+"cup",
+1.0
+],
+"Passiflora pectinata": [
+"#d9dee0",
+"#d9dee0",
+"cup",
+1.0
+],
+"Passiflora vitifolia": [
+"#e36054",
+"#e36054",
+"cup",
+1.0
+],
+"Pedicularis torta": [
+"#d9bd2d",
+"#d9bd2d",
+"spike",
+0.35
+],
+"Peganum harmala": [
+"#e3e3d6",
+"#e7d147",
+"cup",
+0.4
+],
+"Pemphis acidula": [
+"#d9c04e",
+"#d9c04e",
+"spike",
+0.9
+],
+"Persicaria capitata": [
+"#d86aa0",
+"#f0d860",
+"spike",
+0.5
+],
+"Persicaria nepalensis": [
+"#d86aa0",
+"#f0d860",
+"spike",
+0.5
+],
+"Petasites frigidus": [
+"#f2c21e",
+"#d49a12",
+"daisy",
+0.4
+],
+"Phylica arborea": "skip",
+"Pimelea linifolia": "skip",
+"Platanthera convallariifolia": [
+"#c86ab8",
+"#e8d8e8",
+"spike",
+0.3
+],
+"Platanthera tipuloides": [
+"#d9be4b",
+"#d9be4b",
+"spike",
+0.3
+],
+"Platycodon grandiflorus": [
+"#734fd1",
+"#734fd1",
+"bell",
+0.4
+],
+"Pleurophyllum hookeri": [
+"#f2c21e",
+"#d49a12",
+"daisy",
+0.4
+],
+"Polemonium acutiflorum": [
+"#7471c8",
+"#7471c8",
+"star",
+0.4
+],
+"Pontederia azurea": "skip",
+"Pontederia crassipes": "skip",
+"Pringlea antiscorbutica": [
+"#f2e04a",
+"#f2e04a",
+"star",
+0.4
+],
+"Prunus humilis": "skip",
+"Pseuderanthemum variabile": [
+"#cce0d8",
+"#cce0d8",
+"trumpet",
+0.6
+],
+"Pterostylis nana": [
+"#d99257",
+"#d99257",
+"spike",
+0.3
+],
+"Ptilotus exaltatus": "skip",
+"Ptilotus obovatus": "skip",
+"Ptilotus sessilifolius": "skip",
+"Pulsatilla nuttalliana": [
+"#dfdde0",
+"#dfdde0",
+"cup",
+0.4
+],
+"Pulsatilla patens": [
+"#7d53ee",
+"#7d53ee",
+"cup",
+0.4
+],
+"Puya chilensis": "skip",
+"Ramosmania rodriguesii": [
+"#d5e0d7",
+"#d5e0d7",
+"cluster",
+0.3
+],
+"Ranunculus biternatus": [
+"#d9b516",
+"#d9b516",
+"cup",
+0.4
+],
+"Ranunculus pallasii": [
+"#f4cf22",
+"#e0b010",
+"cup",
+0.4
+],
+"Rehmannia glutinosa": [
+"#d98f57",
+"#d98f57",
+"spike",
+0.35
+],
+"Rhanterium epapposum": [
+"#d9c157",
+"#ae8a3b",
+"daisy",
+0.4
+],
+"Rhaphiolepis indica": "skip",
+"Rhizophora stylosa": "skip",
+"Rhodiola rosea": [
+"#f7cc56",
+"#f7cc56",
+"star",
+0.15
+],
+"Rhododendron camtschaticum": "skip",
+"Rhododendron glandulosum": "skip",
+"Rhododendron lapponicum": "skip",
+"Rhododendron quadrasianum": "skip",
+"Richardia grandiflora": [
+"#e0d6dc",
+"#e0d6dc",
+"cluster",
+0.3
+],
+"Roemeria pavonina": [
+"#df3d21",
+"#df3d21",
+"cup",
+0.5
+],
+"Romulea columnae": [
+"#e0dddc",
+"#d9b839",
+"trumpet",
+0.5
+],
+"Rosa abyssinica": [
+"#dadfe0",
+"#dadfe0",
+"cup",
+1.2
+],
+"Rubus chamaemorus": [
+"#d9e0de",
+"#d9e0de",
+"cup",
+1.0
+],
+"Rubus hochstetterorum": [
+"#e0dbd5",
+"#e0dbd5",
+"cup",
+1.0
+],
+"Salix bebbiana": "skip",
+"Salvia mexicana": [
+"#4425be",
+"#4425be",
+"spike",
+0.4
+],
+"Sanguinaria canadensis": [
+"#edeceb",
+"#edeceb",
+"cup",
+0.5
+],
+"Sapria ram": "skip",
+"Saxifraga aizoides": [
+"#d86aa0",
+"#f0d860",
+"star",
+0.15
+],
+"Saxifraga cespitosa": [
+"#e3e2d7",
+"#d9b257",
+"star",
+0.15
+],
+"Saxifraga hirculus": [
+"#d86aa0",
+"#f0d860",
+"star",
+0.15
+],
+"Saxifraga oppositifolia": [
+"#a52f9f",
+"#a52f9f",
+"star",
+0.15
+],
+"Saxifraga tricuspidata": [
+"#d9ca57",
+"#e0dfca",
+"star",
+0.15
+],
+"Scadoxus cyrtanthiflorus": [
+"#9a2f1f",
+"#9a2f1f",
+"trumpet",
+0.4
+],
+"Scaevola taccada": [
+"#dee0da",
+"#dee0da",
+"star",
+0.4
+],
+"Scalesia baurii": [
+"#e0dcd1",
+"#e8c23a",
+"daisy",
+0.4
+],
+"Schoenia cassiniana": [
+"#d98b4e",
+"#e8c23a",
+"daisy",
+0.4
+],
+"Senecio elegans": [
+"#c349b9",
+"#e8c23a",
+"daisy",
+0.5
+],
+"Senecio falklandicus": [
+"#d9c226",
+"#ae8510",
+"daisy",
+0.5
+],
+"Senecio inaequidens": [
+"#f2c21e",
+"#d49a12",
+"daisy",
+0.5
+],
+"Senecio vernalis": [
+"#eecf18",
+"#be8b02",
+"daisy",
+0.5
+],
+"Sibbaldiopsis tridentata": [
+"#d7e0d4",
+"#d7e0d4",
+"cup",
+0.3
+],
+"Sida fallax": [
+"#d9964a",
+"#d9964a",
+"cup",
+0.5
+],
+"Silene acaulis": [
+"#99608d",
+"#99608d",
+"star",
+0.5
+],
+"Silybum marianum": [
+"#d9c146",
+"#d9c146",
+"cluster",
+0.4
+],
+"Sisymbrium irio": [
+"#f2e04a",
+"#f2e04a",
+"star",
+0.4
+],
+"Sisyrinchium bermudiana": [
+"#8e51d3",
+"#8e51d3",
+"star",
+0.5
+],
+"Solanum americanum": [
+"#dbe1d2",
+"#dbe1d2",
+"star",
+0.5
+],
+"Solanum lasiophyllum": [
+"#d98e42",
+"#d98e42",
+"star",
+0.5
+],
+"Solenostemma arghel": [
+"#d9af57",
+"#d9af57",
+"star",
+0.6
+],
+"Solidago altissima": [
+"#d9b61b",
+"#d9b61b",
+"spike",
+0.9
+],
+"Spathodea campanulata": "skip",
+"Spathoglottis pacifica": [
+"#db8de6",
+"#db8de6",
+"spike",
+0.3
+],
+"Spathoglottis plicata": [
+"#b787d8",
+"#d99e16",
+"spike",
+0.3
+],
+"Sphagneticola trilobata": [
+"#f7a219",
+"#c66902",
+"daisy",
+0.4
+],
+"Strelitzia nicolai": [
+"#d9a357",
+"#e0d5ca",
+"cup",
+0.4
+],
+"Strobilanthes lupulina": [
+"#8d4bad",
+"#8d4bad",
+"trumpet",
+0.6
+],
+"Strobilanthes viscosa": [
+"#d86aa0",
+"#f0d860",
+"trumpet",
+0.6
+],
+"Suriana maritima": [
+"#d86aa0",
+"#f0d860",
+"cup",
+0.4
+],
+"Swainsona pterostylis": [
+"#bc3eb8",
+"#bc3eb8",
+"cluster",
+0.35
+],
+"Synedrella nodiflora": [
+"#e7c817",
+"#b98602",
+"daisy",
+0.4
+],
+"Syzygium malaccense": "skip",
+"Tanacetum vulgare": [
+"#f2c21e",
+"#d49a12",
+"cluster",
+0.4
+],
+"Taraxacum erythrospermum": [
+"#f2c21e",
+"#d49a12",
+"daisy",
+0.2
+],
+"Taraxacum officinale": [
+"#d9bd16",
+"#ae7f02",
+"daisy",
+0.2
+],
+"Terminalia carolinensis": "skip",
+"Thonningia sanguinea": [
+"#dd5f95",
+"#dd5f95",
+"cup",
+0.4
+],
+"Thunbergia alata": [
+"#f78d19",
+"#f78d19",
+"trumpet",
+0.6
+],
+"Thysanotus patersonii": [
+"#c17ee0",
+"#c17ee0",
+"bell",
+0.35
+],
+"Tiarella trifoliata": [
+"#d86aa0",
+"#f0d860",
+"spike",
+0.25
+],
+"Tillandsia aeranthos": "skip",
+"Tillandsia stricta": "skip",
+"Trachymene saniculifolia": [
+"#994542",
+"#994542",
+"umbel",
+0.4
+],
+"Trichocereus atacamensis": "skip",
+"Trichocereus chiloensis": "skip",
+"Tridax procumbens": [
+"#e4ad17",
+"#b67202",
+"daisy",
+0.4
+],
+"Trifolium pratense": [
+"#e678b8",
+"#e678b8",
+"cluster",
+0.2
+],
+"Trifolium repens": [
+"#4a91dc",
+"#e0cece",
+"cluster",
+0.2
+],
+"Trillium camschatcense": [
+"#e0e0d8",
+"#e0e0d8",
+"cup",
+0.35
+],
+"Trillium grandiflorum": [
+"#e4e2d2",
+"#e4e2d2",
+"cup",
+0.35
+],
+"Trillium ovatum": [
+"#e0ded6",
+"#e0ded6",
+"cup",
+0.35
+],
+"Triteleia laxa": [
+"#8d64c6",
+"#8d64c6",
+"umbel",
+0.35
+],
+"Trollius sibiricus": [
+"#d99816",
+"#d99816",
+"cup",
+0.4
+],
+"Tropaeolum majus": [
+"#eea118",
+"#eea118",
+"trumpet",
+0.4
+],
+"Tulipa biflora": [
+"#ebc729",
+"#ebc729",
+"cup",
+0.35
+],
+"Tulipa greigii": [
+"#da9e16",
+"#da9e16",
+"cup",
+0.35
+],
+"Tulipa ostrowskiana": [
+"#e14422",
+"#e14422",
+"cup",
+0.35
+],
+"Tulipa patens": [
+"#e0cad8",
+"#e0cad8",
+"cup",
+0.35
+],
+"Tulipa praestans": [
+"#f03f24",
+"#f03f24",
+"cup",
+0.35
+],
+"Tulipa suaveolens": [
+"#ca5d76",
+"#d99f57",
+"cup",
+0.35
+],
+"Tulipa sylvestris": [
+"#d9be16",
+"#d9be16",
+"cup",
+0.35
+],
+"Tulipa uniflora": [
+"#d9c325",
+"#d9c325",
+"cup",
+0.35
+],
+"Turnera subulata": [
+"#dbe0ca",
+"#d9b716",
+"cup",
+0.4
+],
+"Turnera ulmifolia": [
+"#f7d319",
+"#f7d319",
+"cup",
+0.4
+],
+"Tussilago farfara": [
+"#e1bf17",
+"#b48002",
+"daisy",
+0.15
+],
+"Utricularia chrysantha": [
+"#d98f16",
+"#d98f16",
+"trumpet",
+0.15
+],
+"Utricularia leptoplectra": [
+"#a896ea",
+"#a896ea",
+"trumpet",
+0.15
+],
+"Vaccinium cylindraceum": "skip",
+"Vachellia caven": "skip",
+"Vachellia karroo": "skip",
+"Valeriana capitata": [
+"#cdcce0",
+"#cdcce0",
+"umbel",
+0.4
+],
+"Verbesina encelioides": [
+"#d9b01c",
+"#ae7607",
+"daisy",
+0.4
+],
+"Victoria amazonica": "skip",
+"Vigna marina": [
+"#d9b616",
+"#d9b616",
+"cluster",
+0.35
+],
+"Viola altaica": [
+"#e6d65c",
+"#e6d65c",
+"cup",
+0.15
+],
+"Viola biflora": [
+"#ebc517",
+"#ebc517",
+"cup",
+0.15
+],
+"Viola prionantha": [
+"#b485ed",
+"#b485ed",
+"cup",
+0.15
+],
+"Viscaria alpina": [
+"#995083",
+"#dde0cb",
+"star",
+0.35
+],
+"Vitellaria paradoxa": "skip",
+"Volkameria mollis": [
+"#e7e6de",
+"#e7e6de",
+"spike",
+0.4
+],
+"Voyria rosea": [
+"#d6cfe6",
+"#d6cfe6",
+"trumpet",
+0.3
+],
+"Westringia rigida": [
+"#dee0e0",
+"#dee0e0",
+"spike",
+0.4
+],
+"Xanthosia rotundifolia": [
+"#e0dbdb",
+"#e0dbdb",
+"umbel",
+0.9
+],
+"Zilla spinosa": [
+"#e0dae0",
+"#e0dae0",
+"star",
+0.4
+]
+}

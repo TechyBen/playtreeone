@@ -241,12 +241,7 @@ void main() {
 }`);
 }
 
-export function makeLeafMaterial(atlasTex, rampRow) {
-  return mat({
-    uLeaf: { value: atlasTex },
-    uLeafRow: { value: rampRow },
-    uLeafShadowOffset: { value: 0.8 },
-  }, INSTANCE_FADE + /* glsl */ `
+const LEAF_VS = /* glsl */ `
 attribute vec2 aCorner;
 attribute vec2 aRand;
 varying vec3 vWorld;
@@ -277,7 +272,14 @@ void main() {
   vWorld = wp;
   vUv = uv;
   gl_Position = psx(projectionMatrix * viewMatrix * vec4(wp, 1.0));
-}`, /* glsl */ `
+}`;
+
+export function makeLeafMaterial(atlasTex, rampRow) {
+  return mat({
+    uLeaf: { value: atlasTex },
+    uLeafRow: { value: rampRow },
+    uLeafShadowOffset: { value: 0.8 },
+  }, INSTANCE_FADE + LEAF_VS, /* glsl */ `
 uniform sampler2D uLeaf;
 uniform float uLeafRow;
 uniform float uLeafShadowOffset;
@@ -295,6 +297,42 @@ void main() {
   float row = t.g > 0.5 ? 3.0 : (t.b < uAccentChance ? 2.0 : uLeafRow);
   vec3 c = ramp(row, t.r * 0.75 + sunT * 0.4 - 0.1) * lightTint(sunT);
   gl_FragColor = vec4(applyFog(c, vWorld), 1.0);
+}`, { side: THREE.DoubleSide });
+}
+
+// Wildflowers: leaf cards whose tiles mark petal, centre and green pixels.
+// Green uses the scene's leaf ramp; petals and centres use the species'
+// own colours, stepped and dithered like a CLUT so they sit in the PS1 look.
+export function makeFlowerMaterial(atlasTex, petal, centre) {
+  return mat({
+    uLeaf: { value: atlasTex },
+    uLeafShadowOffset: { value: 0.4 },
+    uPetal: { value: new THREE.Color(petal) },
+    uCentre: { value: new THREE.Color(centre) },
+  }, INSTANCE_FADE + LEAF_VS, /* glsl */ `
+uniform sampler2D uLeaf;
+uniform float uLeafShadowOffset;
+uniform vec3 uPetal;
+uniform vec3 uCentre;
+varying vec3 vWorld;
+varying vec2 vUv;
+varying float vNdl;
+varying float vFade;
+void main() {
+  vec4 t = texture2D(uLeaf, vUv);
+  if (t.a < 0.5) discard;
+  lodClip(vFade, 0.0);
+  if (isShadowPass()) { gl_FragColor = vec4(1.0); return; }
+  float sunT = vNdl * shadowAt(vWorld + uSunDir * uLeafShadowOffset);
+  float idx = t.r * 0.75 + sunT * 0.4 - 0.1;
+  vec3 c;
+  if (t.g > 0.75) {
+    c = ramp(0.0, idx);
+  } else {
+    float q = floor(clamp(idx + (bayer4(gl_FragCoord.xy) - 0.5) * 0.3, 0.0, 1.0) * 3.0 + 0.5) / 3.0;
+    c = (t.g > 0.25 ? uCentre : uPetal) * mix(0.5, 1.12, q);
+  }
+  gl_FragColor = vec4(applyFog(c * lightTint(sunT), vWorld), 1.0);
 }`, { side: THREE.DoubleSide });
 }
 

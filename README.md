@@ -64,6 +64,14 @@ Under **Weather** in the panel, choose `live` to use [Open-Meteo](https://open-m
 
 Live weather can't run inside the claude.ai artifact, because artifacts block outside requests; the manual sliders still work there.
 
+## Wildflowers
+
+The forest floor gets the wildflowers that bloom where you are, at this time of year. The trees stay general. `src/flowerdata.js` holds 300 species and, for each 10° cell of the world, the dozen most often recorded in flower there, with the quarters of the year they bloom. `src/flowers.js` picks the ones flowering now in your cell, using the same rough location as the sun, estimated from your time zone. Nothing is looked up online. The **time shift** slider moves the season too. If fewer than three species flower that quarter, a few from the neighbouring quarters fill in.
+
+Each species is an approximate likeness, not a botanical drawing: a petal colour, a centre colour, a head shape and a height. There are eight head shapes, drawn from code into leaf-card tiles like the leaves (`makeFlowerAtlas` in `src/leafgen.js`): daisy, cup, star, bell, spike, umbel, cluster and trumpet. Flowers grow in single-species clumps, mostly where there's light: round the clearing, along trail edges and in gaps. They're denser than in real life so you find them without hunting. Small ones are drawn about 1.4× larger than life, and tall ones at their true size. The **wildflowers** slider sets how many. `?flowers=0` in the address turns them off, and `?lat=…&lon=…` sets the place, for the sun as well as the flowers.
+
+The data comes from [iNaturalist](https://www.inaturalist.org): counts of research-grade observations annotated as flowering. `tools/flowers/fetch_inat.py` downloads the counts per cell and quarter (cached, resumable, about one request a second). `tools/flowers/build.py` then picks the 300 species round robin across cells, so every region keeps its own common flowers rather than the best-recorded places taking over. It skips plants that aren't forest-floor wildflowers and gives each kept one its likeness, both automatically, in `tools/flowers/traits_auto.py`. That script reads each species' family from iNaturalist and uses it to skip grasses, sedges, trees, shrubs, cacti and water plants, and to choose the head shape and height from tables by family and genus. It measures the colours from the species' default iNaturalist photo, a 75 px thumbnail that's only read during the build and never kept: ignoring green, brown and dark pixels, the main colour round the middle is the petal, and a clearly different colour at the very middle is the centre. Hand corrections in `tools/flowers/traits.json` override the automatic ones (`traits.auto.json`), and `tools/flowers/sheet.html` shows every species' tiles for review. Then `build.py` writes `src/flowerdata.js`.
+
 ## References
 
 - Honda, *Description of the form of trees by the parameters of the tree-like body* (1971)

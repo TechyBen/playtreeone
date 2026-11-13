@@ -56,6 +56,16 @@ class Tile {
       this.plot(x0 + (x1 - x0) * k, y0 + (y1 - y0) * k, t0 + (t1 - t0) * k, twig, rnd);
     }
   }
+  // Flower tiles use G as a class: 0 petal, 128 flower centre, 255 green.
+  px(x, y, tone, g) {
+    x = Math.floor(x); y = Math.floor(y);
+    if (x < 0 || y < 0 || x >= this.T || y >= this.T) return;
+    const i = (y * this.stride + this.ox + x) * 4;
+    this.data[i] = Math.round(clamp01(tone) * 255);
+    this.data[i + 1] = g;
+    this.data[i + 2] = 0;
+    this.data[i + 3] = 255;
+  }
   // Blade from base (bx,by) pointing along `ang`.
   blade(bx, by, ang, len, wid, shape, tone, rnd, midrib) {
     const ca = Math.cos(ang), sa = Math.sin(ang);
@@ -191,6 +201,137 @@ function frondTile(tile, rng, density, scale) {
       }
     }
   }
+}
+
+// Wildflowers. Column 0 of a flower atlas is the plant's leafy base; columns
+// 1-3 are stems rising from the bottom of the tile to flower heads drawn in
+// one of a few shapes, which together give an approximate likeness of a
+// species (its colours come from the material). G marks petal (0), centre
+// (128) or green (255) pixels.
+const FLOWER_SHAPES = ['daisy', 'cup', 'star', 'bell', 'spike', 'umbel', 'cluster', 'trumpet'];
+export { FLOWER_SHAPES };
+const GREEN = 255, CENTRE = 128, PETAL = 0;
+
+function stem(tile, x0, y0, x1, y1, rng) {
+  const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0)));
+  const bow = rng.float(-1.5, 1.5);
+  let px = x0, py = y0;
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    px = x0 + (x1 - x0) * t + Math.sin(t * Math.PI) * bow;
+    py = y0 + (y1 - y0) * t;
+    tile.px(px, py, 0.35 + 0.2 * t, GREEN);
+  }
+}
+
+function leafBlade(tile, x, y, ang, len, wid, rng) {
+  const ca = Math.cos(ang), sa = Math.sin(ang);
+  for (let i = 0; i <= len * 2; i++) {
+    const t = i / (len * 2), w = Math.sin(Math.PI * t) * wid * 0.5;
+    for (let j = -w; j <= w; j += 0.5) tile.px(x + ca * t * len - sa * j, y + sa * t * len + ca * j, 0.3 + 0.4 * t + rng.float(-0.05, 0.05), GREEN);
+  }
+}
+
+function flowerHead(tile, shape, x, y, s, rng) {
+  const lit = (dx, dy) => 0.35 + 0.6 * ballLight(clamp01(dx / (s + 1)) * Math.sign(dx), clamp01(dy / (s + 1)) * Math.sign(dy));
+  if (shape === 'daisy' || shape === 'cup' || shape === 'star') {
+    const petals = shape === 'daisy' ? rng.int(10, 13) : 5;
+    const len = shape === 'daisy' ? s : s * 0.9, wid = shape === 'daisy' ? 1.2 : shape === 'cup' ? s * 0.9 : 1.1;
+    const a0 = rng.float(0, Math.PI * 2);
+    for (let i = 0; i < petals; i++) {
+      const a = a0 + (i / petals) * Math.PI * 2;
+      for (let t = 0.2; t <= 1; t += 0.12) {
+        const w = Math.sin(Math.PI * Math.min(1, t * 1.1)) * wid * 0.5;
+        for (let j = -w; j <= w; j += 0.5) {
+          const dx = Math.cos(a) * t * len - Math.sin(a) * j, dy = (Math.sin(a) * t * len + Math.cos(a) * j) * 0.85;
+          tile.px(x + dx, y + dy, lit(dx, dy), PETAL);
+        }
+      }
+    }
+    const c = shape === 'daisy' ? Math.max(1, s * 0.32) : Math.max(0.6, s * 0.22);
+    for (let dy = -c; dy <= c; dy += 0.5) for (let dx = -c; dx <= c; dx += 0.5) if (dx * dx + dy * dy <= c * c) tile.px(x + dx, y + dy, lit(dx, dy) * 0.9, CENTRE);
+  } else if (shape === 'bell') {
+    // A nodding stalk with bells hanging down one side.
+    const n = rng.int(3, 5), side = rng.chance(0.5) ? 1 : -1;
+    for (let i = 0; i < n; i++) {
+      const bx = x + side * (i * s * 0.45), by = y + i * s * 0.75 + i * i * 0.3;
+      for (let t = 0; t <= 1; t += 0.1) {
+        const w = (0.35 + 0.65 * t) * s * 0.45;
+        for (let j = -w; j <= w; j += 0.5) tile.px(bx + j, by + t * s * 0.9, lit(j, t * s - s / 2), PETAL);
+      }
+      tile.px(bx, by - 1, 0.4, GREEN);
+    }
+  } else if (shape === 'spike') {
+    // Florets crowded up the top of the stem, smaller toward the tip.
+    // Separate florets, alternating sides, nodding outward and down.
+    const h = s * 4;
+    let sd = rng.chance(0.5) ? 1 : -1;
+    for (let t = 0; t <= 1; t += 0.085) {
+      const len = (1 - t * 0.6) * s * 0.85 + 0.8;
+      const yy = y + h * (1 - t);
+      const ang = sd > 0 ? 0.45 : Math.PI - 0.45;
+      tile.blade(x, yy, ang, len, Math.max(1.4, len * 0.7), BLADES.broad, lit(sd * len, yy - y - h / 2) + rng.float(-0.06, 0.06), 0, false);
+      sd = -sd;
+    }
+    tile.line(x, y, x, y + h, 0.35, 0.45, true, 0);
+  } else if (shape === 'umbel') {
+    // Rays from a point up to a flat-topped dome of tiny florets.
+    const rays = rng.int(7, 10), r = s * 1.5;
+    for (let i = 0; i < rays; i++) {
+      const a = -Math.PI / 2 + ((i / (rays - 1)) - 0.5) * 2.2;
+      const ex = x + Math.cos(a) * r, ey = y + Math.sin(a) * r * 0.5 + r * 0.4;
+      tile.line(x, y + r * 0.9, ex, ey, 0.4, 0.5, true, 0);
+      for (let k = 0; k < 10; k++) { const dx = rng.float(-1.7, 1.7), dy = rng.float(-1.3, 0.6); tile.px(ex + dx, ey + dy, lit(ex - x + dx, dy), PETAL); }
+    }
+  } else if (shape === 'cluster') {
+    // A round head of florets (clover, thistle, scabious).
+    for (let dy = -s; dy <= s; dy += 0.5) for (let dx = -s; dx <= s; dx += 0.5) {
+      if (dx * dx + dy * dy > s * s || rng.next() < 0.15) continue;
+      tile.px(x + dx, y + dy, lit(dx, dy) + rng.float(-0.08, 0.08), PETAL);
+    }
+  } else {
+    // Trumpet: a funnel opening upward, darker in the throat.
+    const h = s * 1.6;
+    for (let t = 0; t <= 1; t += 0.08) {
+      const w = (0.2 + 0.8 * t * t) * s * 0.7;
+      for (let j = -w; j <= w; j += 0.5) tile.px(x + j, y + h * (1 - t), t > 0.85 && Math.abs(j) < w * 0.4 ? 0.25 : lit(j, -t * h), t > 0.85 && Math.abs(j) < w * 0.35 ? CENTRE : PETAL);
+    }
+  }
+}
+
+function flowerTile(tile, shape, variant, rng, scale) {
+  const T = tile.T, k = T / 32;
+  if (variant === 0) {
+    // The leafy base: a low rosette of leaves.
+    const n = rng.int(7, 11);
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI / 2 + rng.float(-1.45, 1.45);
+      leafBlade(tile, T / 2 + rng.float(-3, 3) * k, T - 1, a, rng.float(0.35, 0.6) * T, rng.float(2, 4) * k, rng);
+    }
+    return;
+  }
+  const heads = { daisy: [2, 3], cup: [2, 3], star: [5, 8], bell: [1, 2], spike: [1, 2], umbel: [1, 2], cluster: [2, 3], trumpet: [1, 2] }[shape];
+  const n = rng.int(...heads);
+  const s = ({ star: 2.2, daisy: 4.2, cup: 4.2, bell: 3.2, spike: 3.0, umbel: 3.4, cluster: 3.4, trumpet: 4.4 }[shape]) * k * scale;
+  const tops = [];
+  for (let i = 0; i < n; i++) {
+    const x = T * (0.2 + 0.6 * (n === 1 ? 0.5 : i / (n - 1))) + rng.float(-2, 2) * k;
+    const y = shape === 'spike' ? T * rng.float(0.05, 0.2) : T * rng.float(0.1, 0.45);
+    tops.push([x, y]);
+  }
+  for (const [x, y] of tops) {
+    stem(tile, T / 2 + rng.float(-2, 2) * k, T - 1, x, y + (shape === 'spike' ? s * 4 : shape === 'bell' ? 0 : s * 0.3), rng);
+    if (rng.chance(0.6)) leafBlade(tile, T / 2, T - 1 - rng.float(2, 8) * k, -Math.PI / 2 + rng.float(-1.2, 1.2), rng.float(4, 8) * k, 2 * k, rng);
+  }
+  for (const [x, y] of tops) flowerHead(tile, shape, x, y, s, rng);
+}
+
+export function makeFlowerAtlas(shape, { tile = 32, scale = 1, seed = 1 } = {}) {
+  const W = tile * ATLAS_COLUMNS;
+  const data = new Uint8Array(W * tile * 4);
+  const rng = new Rng(seed);
+  for (let v = 0; v < ATLAS_COLUMNS; v++) flowerTile(new Tile(data, W, v * tile, tile), shape, v, rng, scale);
+  return { data, width: W, height: tile };
 }
 
 export function makeLeafAtlas(kind, { tile = 32, density = 1, scale = 1, seed = 1 } = {}) {
