@@ -113,6 +113,55 @@ export const PRESETS = [
     forest: { bare: 0.6, oak: 0.2, beech: 0.2 },
     shrubs: 0.6,
   },
+  // Pacific Northwest, from examples/pnw-fern-forest.webp: tall Douglas firs,
+  // leaning mossy bigleaf maples, vine maples turning, drifts of sword fern,
+  // a hillside with trails through the dense growth, hazy autumn backlight.
+  {
+    id: 'fern-hollow', name: 'Fern Hollow',
+    sky: { top: '#aeb4bd', horizon: '#e4e2da' },
+    fog: { color: '#c4c2b4', density: 0.026, base: 2, falloff: 0.06, noise: 0.3 },
+    sun: { color: '#fff0d4', elevation: 22, azimuth: 15, strength: 0.95, godrays: 0.85 },
+    ambient: '#8c8c7a',
+    ramps: {
+      leaf:   ['#1c2217', '#2f3a25', '#4a5937', '#6f7f4e'],
+      leaf2:  ['#3a3220', '#6c5a2e', '#a4893f', '#d6b65c'],
+      accent: ['#4a2716', '#80421f', '#b56a31', '#df9a52'],
+      bark:   ['#1f1c17', '#36302a', '#4e483e', '#6a6457'],
+      ground: ['#2a2219', '#43362a', '#5e4e3b', '#7a6b50'],
+      moss:   ['#232a17', '#3c4a24', '#58692f', '#7c8c45'],
+    },
+    accent: 0.3,
+    moss: 0.55,
+    forest: { douglas: 0.55, maple: 0.22, fir: 0.13, snag: 0.1 },
+    shrubs: 1.1,
+    ferns: 1.6,
+    density: 2.2, gaps: 0.22, trails: 3, clearing: 5,
+    relief: { amp: 10, slope: 0.28, dir: 0.6 },
+  },
+  // The same forest on a wet grey day, deeper in: steeper, a ravine across
+  // the far side, everything mossier and greener.
+  {
+    id: 'moss-ravine', name: 'Moss Ravine',
+    sky: { top: '#8e9690', horizon: '#c3c8bf' },
+    fog: { color: '#9da596', density: 0.04, base: 3, falloff: 0.05, noise: 0.45 },
+    sun: { color: '#e8eedf', elevation: 35, azimuth: -20, strength: 0.45, godrays: 0.25 },
+    ambient: '#7e8676',
+    ramps: {
+      leaf:   ['#141c14', '#24321f', '#3b4f2c', '#5d7340'],
+      leaf2:  ['#2a3418', '#4c5c26', '#7a8a36', '#a8b252'],
+      accent: ['#3a2a14', '#6a4a1f', '#9a7030', '#c89a4a'],
+      bark:   ['#1a1a16', '#2c2b24', '#414034', '#5a594b'],
+      ground: ['#1e2016', '#31341f', '#4a4e2d', '#666b3e'],
+      moss:   ['#1f2a14', '#36481f', '#55702b', '#7a9440'],
+    },
+    accent: 0.1,
+    moss: 0.85,
+    forest: { douglas: 0.35, maple: 0.4, fir: 0.15, snag: 0.1 },
+    shrubs: 0.8,
+    ferns: 2,
+    density: 2.2, gaps: 0.2, trails: 2, clearing: 5,
+    relief: { amp: 14, slope: 0.35, dir: -0.9, ravine: 9 },
+  },
 ];
 
 export const presetById = id => PRESETS.find(p => p.id === id) || PRESETS[0];

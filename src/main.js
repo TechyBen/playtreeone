@@ -33,7 +33,7 @@ const params = {
   shadows: true, shadowRes: 512, shadowSize: 70,
   motes: true, wind: 1,
   // forest
-  seed: 7, trees: 450, shrubs: 300, variants: 3, polyDetail: 1,
+  seed: 7, trees: 450, shrubs: 300, ferns: 1400, variants: 3, polyDetail: 1,
   lodDistance: 38, impostorViews: 8, impostorRes: 96,
   // leaves
   leafTile: 32, leafDensity: 1, leafScale: 1,
@@ -85,19 +85,90 @@ const groundTex = dataTexture(makeGroundTexture(5), true);
 const branchMat = makeBranchMaterial(barkTex);
 
 // ---------------------------------------------------------------- terrain
+// Per-scene relief (from the preset): `amp` scales the rolling noise, `slope`
+// tilts the land outside the clearing along compass direction `dir` (a
+// hillside, rising on one side and falling away on the other), and `ravine`
+// cuts a winding gully across the far side. The clearing stays level.
+const relief = { amp: 8, slope: 0, dir: 0, ravine: 0 };
 function terrainHeight(x, z) {
   const r = Math.hypot(x, z);
-  const rough = 0.25 + 0.75 * THREE.MathUtils.smoothstep(r, 8, 40);
-  return (fbm(x * 0.015 + 50, z * 0.015 + 50, 4, 3) - 0.5) * 8 * rough
+  const S = THREE.MathUtils.smoothstep;
+  const rough = 0.25 + 0.75 * S(r, 8, 40);
+  let h = (fbm(x * 0.015 + 50, z * 0.015 + 50, 4, 3) - 0.5) * relief.amp * rough
     + Math.pow(Math.max(0, r - 30) / 90, 2) * 14;
+  if (relief.slope || relief.ravine) {
+    const c = Math.cos(relief.dir), sn = Math.sin(relief.dir);
+    const along = x * c + z * sn, across = -x * sn + z * c;
+    h += along * relief.slope * S(r, 9, 30);
+    if (relief.ravine) {
+      const d = along + 24 + (fbm(across * 0.02 + 3, 7, 3, 11) - 0.5) * 30;
+      h -= relief.ravine * Math.exp(-(d * d) / 120) * S(r, 12, 26);
+    }
+  }
+  return h;
 }
 
-const groundGeo = new THREE.PlaneGeometry(AREA * 2 + 60, AREA * 2 + 60, 96, 96);
+const groundGeo = new THREE.PlaneGeometry(AREA * 2 + 60, AREA * 2 + 60, 120, 120);
 groundGeo.rotateX(-Math.PI / 2);
-{
+function shapeGround() {
   const p = groundGeo.attributes.position;
   for (let i = 0; i < p.count; i++) p.setY(i, terrainHeight(p.getX(i), p.getZ(i)));
+  p.needsUpdate = true;
   groundGeo.computeVertexNormals();
+  groundGeo.computeBoundingSphere();
+}
+shapeGround();
+
+// Trails: a few winding paths out from the clearing (per preset). Trees keep
+// clear of them, undergrowth mostly does, and the ground shows trodden
+// litter along them (a mask texture over the forest square).
+let trails = [];
+const TRAIL_RES = 256;
+const trailTex = new THREE.DataTexture(new Uint8Array(TRAIL_RES * TRAIL_RES * 4), TRAIL_RES, TRAIL_RES);
+trailTex.magFilter = trailTex.minFilter = THREE.LinearFilter;
+function makeTrails(n, seed) {
+  const rng = new Rng(seed * 13 + 5);
+  trails = [];
+  for (let i = 0; i < n; i++) {
+    let a = (i / n) * Math.PI * 2 + rng.float(-0.4, 0.4);
+    let x = Math.cos(a) * 5, z = Math.sin(a) * 5, head = a;
+    const pts = [[x, z]];
+    while (Math.hypot(x, z) < AREA + 10 && pts.length < 200) {
+      // Wander, but keep heading out of the forest.
+      head += rng.float(-0.35, 0.35) + 0.15 * Math.sin(Math.atan2(z, x) - head);
+      x += Math.cos(head) * 2;
+      z += Math.sin(head) * 2;
+      pts.push([x, z]);
+    }
+    trails.push(pts);
+  }
+  // Mask: 1 on a trail centre line, fading to 0 about 1.3 m out.
+  const data = trailTex.image.data, half = AREA + 30;
+  data.fill(0);
+  for (const pts of trails) {
+    for (const [px, pz] of pts) {
+      const cx = ((px / half) * 0.5 + 0.5) * TRAIL_RES, cz = ((pz / half) * 0.5 + 0.5) * TRAIL_RES;
+      const rad = 2;
+      for (let ty = Math.floor(cz - rad); ty <= cz + rad; ty++) {
+        for (let tx = Math.floor(cx - rad); tx <= cx + rad; tx++) {
+          if (tx < 0 || ty < 0 || tx >= TRAIL_RES || ty >= TRAIL_RES) continue;
+          const wx = ((tx + 0.5) / TRAIL_RES - 0.5) * 2 * half, wz = ((ty + 0.5) / TRAIL_RES - 0.5) * 2 * half;
+          const v = Math.round(255 * (1 - THREE.MathUtils.smoothstep(Math.hypot(wx - px, wz - pz), 0.5, 1.6)));
+          const o = (ty * TRAIL_RES + tx) * 4;
+          if (v > data[o]) data[o] = v;
+        }
+      }
+    }
+  }
+  trailTex.needsUpdate = true;
+  U.uTrail.value = trailTex;
+  U.uTrailArea.value = half;
+}
+// Distance from (x, z) to the nearest trail point (they're 2 m apart).
+function trailDist(x, z) {
+  let d = Infinity;
+  for (const pts of trails) for (const [px, pz] of pts) d = Math.min(d, Math.hypot(x - px, z - pz));
+  return d;
 }
 const ground = new THREE.Mesh(groundGeo, makeGroundMaterial(groundTex));
 ground.frustumCulled = false;
@@ -231,6 +302,12 @@ function buildForest() {
   const mix = { ...p.forest };
   const speciesIds = Object.keys(mix).filter(k => mix[k] > 0);
   if (params.shrubs > 0 && p.shrubs > 0) speciesIds.push('shrub');
+  if (params.ferns > 0 && p.ferns > 0) speciesIds.push('fern');
+
+  // The scene's land and trails.
+  Object.assign(relief, { amp: 8, slope: 0, dir: 0, ravine: 0 }, p.relief || {});
+  shapeGround();
+  makeTrails(p.trails || 0, params.seed);
 
   // Leaf atlases: one per species, shared by all its variants.
   for (const sid of speciesIds) {
@@ -274,12 +351,15 @@ function buildForest() {
   };
   const treeMix = Object.fromEntries(Object.entries(mix).filter(([, w]) => w > 0));
   if (Object.keys(treeMix).length && params.trees > 0) {
-    const cell = (AREA * 2) / Math.sqrt(params.trees / 0.75);
+    // Denser scenes (`density`) pack more trees in; `gaps` sets how much of
+    // the forest is left open.
+    const cell = (AREA * 2) / Math.sqrt((params.trees * (p.density ?? 1)) / 0.75);
     for (let gz = -AREA; gz < AREA; gz += cell) {
       for (let gx = -AREA; gx < AREA; gx += cell) {
         const x = gx + rng.float(0.1, 0.9) * cell, z = gz + rng.float(0.1, 0.9) * cell;
-        if (Math.hypot(x, z) < 9) continue;
-        if (fbm(x * 0.03 + 9, z * 0.03 + 9, 3, params.seed) < 0.36) continue;
+        if (Math.hypot(x, z) < (p.clearing ?? 9)) continue;
+        if (fbm(x * 0.03 + 9, z * 0.03 + 9, 3, params.seed) < (p.gaps ?? 0.36)) continue;
+        if (trails.length && trailDist(x, z) < 2.2) continue;
         place(rng.weighted(treeMix), x, z, 0.75 + rng.weibull(2.2, 0.35));
       }
     }
@@ -288,7 +368,24 @@ function buildForest() {
     const n = Math.round(params.shrubs * p.shrubs);
     for (let i = 0; i < n; i++) {
       const a = rng.float(0, Math.PI * 2), r = 4 + Math.pow(rng.next(), 0.7) * (AREA - 4);
-      place('shrub', Math.cos(a) * r, Math.sin(a) * r, rng.float(0.7, 1.4));
+      const x = Math.cos(a) * r, z = Math.sin(a) * r;
+      if (trails.length && trailDist(x, z) < 1.2) continue;
+      place('shrub', x, z, rng.float(0.7, 1.4));
+    }
+  }
+  // Ferns grow in drifts (a patch noise), thick in places, never on a trail
+  // and thin in the clearing.
+  if (bySpecies.fern) {
+    const n = Math.round(params.ferns * p.ferns);
+    for (let i = 0, tries = 0; i < n && tries < n * 6; tries++) {
+      // Weighted toward the middle, where you are.
+      const a = rng.float(0, Math.PI * 2), r = 2.5 + Math.pow(rng.next(), 1.3) * (AREA - 2.5);
+      const x = Math.cos(a) * r, z = Math.sin(a) * r;
+      const patch = fbm(x * 0.06 + 31, z * 0.06 + 17, 3, params.seed + 7);
+      if (patch < 0.36) continue;
+      if (trails.length && trailDist(x, z) < 1.0) continue;
+      place('fern', x, z, rng.float(0.8, 1.35));
+      i++;
     }
   }
 
@@ -360,6 +457,7 @@ function syncUniforms() {
   else U.uSunColor.value.set(p.sun.color);
   U.uSunStrength.value = L.strength;
   U.uAmbient.value.set(p.ambient).multiply(L.tint);
+  U.uMoss.value = p.moss || 0;
   U.uFogColor.value.set(p.fog.color).multiply(L.tint);
   // Overcast skies flatten toward the fog colour.
   const ws = weather.scene;
@@ -490,6 +588,7 @@ const rebuild = () => buildForest();
   f.add(params, 'seed', 1, 9999, 1).onFinishChange(rebuild);
   f.add(params, 'trees', 0, 2000, 10).onFinishChange(rebuild);
   f.add(params, 'shrubs', 0, 2000, 10).onFinishChange(rebuild);
+  f.add(params, 'ferns', 0, 4000, 50).onFinishChange(rebuild);
   f.add(params, 'variants', 1, 6, 1).name('variants / species').onFinishChange(rebuild);
   f.add(params, 'polyDetail', 0.5, 2, 0.25).name('branch sides x').onFinishChange(rebuild);
   f.add(params, 'lodDistance', 0, 150, 1).name('billboard distance');

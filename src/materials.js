@@ -12,14 +12,20 @@
 
 import * as THREE from 'three';
 
-export const RAMP_ROWS = ['leaf', 'leaf2', 'accent', 'bark', 'ground'];
+export const RAMP_ROWS = ['leaf', 'leaf2', 'accent', 'bark', 'ground', 'moss'];
 
 const white = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
 white.needsUpdate = true;
 export const DUMMY_TEX = white;
+const black = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1);
+black.needsUpdate = true;
 
 export const U = {
   uRes: { value: new THREE.Vector2(320, 240) },
+  // Moss on bark (0 none .. 1 heavy) and the trail mask over the forest square.
+  uMoss: { value: 0 },
+  uTrail: { value: black },
+  uTrailArea: { value: 150 },
   uSnap: { value: 1 },
   uAffine: { value: 1 },
   uPass: { value: 0 },
@@ -137,7 +143,7 @@ vec3 ramp(float row, float idx) {
   float n = uRampSteps;
   idx += (bayer4(gl_FragCoord.xy) - 0.5) * uRampDither / max(n - 1.0, 1.0);
   float s = floor(clamp(idx, 0.0, 1.0) * (n - 1.0) + 0.5);
-  return texture2D(uRamp, vec2((s + 0.5) / n, (row + 0.5) / 5.0)).rgb;
+  return texture2D(uRamp, vec2((s + 0.5) / n, (row + 0.5) / 6.0)).rgb;
 }
 
 vec3 lightTint(float sunT) {
@@ -188,6 +194,7 @@ varying vec3 vUvA;
 varying float vNdl;
 varying float vAo;
 varying float vFade;
+varying float vUp;
 void main() {
   mat4 m = modelMatrix;
   vFade = 0.0;
@@ -200,6 +207,7 @@ void main() {
   wp.xyz += windSway(base, wp.y - base.y);
   vec3 n = normalize(mat3(m) * normal);
   vNdl = max(dot(n, uSunDir), 0.0);
+  vUp = n.y;
   vAo = aAo * (0.8 + 0.2 * n.y);
   vWorld = wp.xyz;
   vUv = uv;
@@ -208,19 +216,27 @@ void main() {
   gl_Position = clip;
 }`, /* glsl */ `
 uniform sampler2D uBark;
+uniform float uMoss;
 varying vec3 vWorld;
 varying vec2 vUv;
 varying vec3 vUvA;
 varying float vNdl;
 varying float vAo;
 varying float vFade;
+varying float vUp;
 void main() {
   lodClip(vFade, 0.0);
   if (isShadowPass()) { gl_FragColor = vec4(1.0); return; }
   vec2 uv = mix(vUv, vUvA.xy / vUvA.z, uAffine);
   float tone = texture2D(uBark, uv).r;
   float sunT = vNdl * shadowAt(vWorld);
-  vec3 c = ramp(3.0, tone * vAo * 0.85 + sunT * 0.3) * lightTint(sunT);
+  float idx = tone * vAo * 0.85 + sunT * 0.3;
+  // Moss: patchy, thicker on surfaces facing up (the tops of leaning limbs)
+  // and low on trunks, switched pixel by pixel with the ordered dither.
+  float clumps = vnoise(vWorld.xz * 1.3 + vWorld.y * 0.45) * 0.7 + vnoise(vWorld.xz * 4.0 + vWorld.y * 1.7) * 0.3;
+  float moss = uMoss * (0.3 + 0.75 * vUp + 0.35 * (1.0 - smoothstep(1.0, 9.0, vWorld.y)) + (clumps - 0.5) * 1.4);
+  bool mossy = moss > bayer4(gl_FragCoord.xy);
+  vec3 c = (mossy ? ramp(5.0, idx * 0.9 + 0.08) : ramp(3.0, idx)) * lightTint(sunT);
   gl_FragColor = vec4(applyFog(c, vWorld), 1.0);
 }`);
 }
@@ -348,6 +364,8 @@ void main() {
   gl_Position = clip;
 }`, /* glsl */ `
 uniform sampler2D uGround;
+uniform sampler2D uTrail;
+uniform float uTrailArea;
 varying vec3 vWorld;
 varying vec2 vUv;
 varying vec3 vUvA;
@@ -357,7 +375,13 @@ void main() {
   vec2 uv = mix(vUv, vUvA.xy / vUvA.z, uAffine);
   float tone = texture2D(uGround, uv).r;
   float sunT = vNdl * shadowAt(vWorld);
-  vec3 c = ramp(4.0, tone * 0.7 + sunT * 0.35 - 0.05) * lightTint(sunT);
+  // Trails: trodden leaf litter, a little darker and warmer, with a ragged
+  // dithered edge.
+  float trail = texture2D(uTrail, vWorld.xz / (uTrailArea * 2.0) + 0.5).r;
+  trail += (vnoise(vWorld.xz * 2.5) - 0.5) * 0.5;
+  bool onTrail = trail > 0.35 + 0.3 * bayer4(gl_FragCoord.xy);
+  float gi = tone * 0.7 + sunT * 0.35 - 0.05;
+  vec3 c = (onTrail ? mix(ramp(4.0, gi * 0.75), ramp(2.0, gi * 0.6), 0.35) : ramp(4.0, gi)) * lightTint(sunT);
   gl_FragColor = vec4(applyFog(c, vWorld), 1.0);
 }`);
 }
@@ -419,7 +443,8 @@ function hexToRgb(hex) {
 export function buildRampTexture(preset, steps) {
   const data = new Uint8Array(steps * RAMP_ROWS.length * 4);
   RAMP_ROWS.forEach((row, r) => {
-    const stops = preset.ramps[row].map(hexToRgb);
+    // Presets without a moss ramp reuse bark (and set no moss anyway).
+    const stops = (preset.ramps[row] || preset.ramps.bark).map(hexToRgb);
     for (let i = 0; i < steps; i++) {
       const f = (steps === 1 ? 0 : i / (steps - 1)) * (stops.length - 1);
       const a = Math.min(Math.floor(f), stops.length - 2), k = f - a;

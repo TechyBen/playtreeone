@@ -159,6 +159,40 @@ function needleTile(tile, kind, rng, density, scale) {
   }
 }
 
+// Fern cluster: two to four fronds fanning up from the base and arching
+// over at the tip, each a green rachis with paired leaflets (pinnae), longest
+// mid-frond and short at the base and tip, drawn back to front.
+function frondTile(tile, rng, density, scale) {
+  const T = tile.T, k = T / 32;
+  const fronds = rng.int(2, 4);
+  const bx = T * (0.5 + rng.float(-0.12, 0.12)), by = T - 1;
+  const order = [...Array(fronds).keys()].map(i => ({ i, z: rng.next() })).sort((p, q) => p.z - q.z);
+  for (const { i, z } of order) {
+    const a = -Math.PI / 2 + ((i + 0.5) / fronds - 0.5) * 1.9 + rng.float(-0.25, 0.25);
+    const len = T * rng.float(0.62, 0.9);
+    const curl = rng.float(0.6, 1.2) * (Math.cos(a) >= 0 ? 1 : -1);
+    const steps = Math.ceil(len);
+    const every = Math.max(1, Math.round(1.6 * k * scale));
+    const shade = 0.55 + 0.45 * z;
+    const rnd = rng.int(0, 255);
+    let x = bx, y = by;
+    for (let s = 0; s <= steps; s++) {
+      const t = s / steps;
+      const ang = a + curl * t * t;
+      x += Math.cos(ang); y += Math.sin(ang);
+      tile.plot(x, y, 0.3 * shade, false, rnd);
+      if (s % every || t < 0.06 || rng.next() > density) continue;
+      const pl = (1.2 + 4.2 * Math.sin(Math.PI * (0.06 + 0.94 * t)) * (1 - 0.3 * t)) * k * scale;
+      for (const side of [-1, 1]) {
+        const pa = ang + side * (Math.PI / 2 - 0.4) + rng.float(-0.12, 0.12);
+        // Ferns read light and fresh against the dark floor.
+        const tone = 0.36 + 0.66 * ballLight((x - T / 2) / (T / 2), (y - T / 2) / (T / 2)) * shade + rng.float(-0.06, 0.06);
+        tile.blade(x, y, pa, pl, Math.max(1.2, 1.5 * k), BLADES.broad, tone, rnd, false);
+      }
+    }
+  }
+}
+
 export function makeLeafAtlas(kind, { tile = 32, density = 1, scale = 1, seed = 1 } = {}) {
   const W = tile * ATLAS_COLUMNS;
   const data = new Uint8Array(W * tile * 4);
@@ -166,6 +200,7 @@ export function makeLeafAtlas(kind, { tile = 32, density = 1, scale = 1, seed = 
   for (let v = 0; v < ATLAS_COLUMNS; v++) {
     const t = new Tile(data, W, v * tile, tile);
     if (kind === 'spray' || kind === 'tuft') needleTile(t, kind, rng, density, scale);
+    else if (kind === 'frond') frondTile(t, rng, density, scale);
     else broadTile(t, kind, rng, density, scale);
   }
   return { data, width: W, height: tile };

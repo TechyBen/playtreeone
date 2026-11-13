@@ -28,9 +28,9 @@ Add `?saver` to the URL for a hands-off view with no UI (`src/saver.js`). For ex
 | Stage | File | Notes |
 |---|---|---|
 | Seeded RNG and value noise | `src/rng.js` | Everything reproduces from `seed`. Tree sizes use a Weibull distribution. |
-| Palettes | `src/presets.js` | Picked from `/examples`. Each preset has 5 ramps (leaf, leaf2, accent, bark, ground), resampled to *N* steps like a CLUT. |
+| Palettes | `src/presets.js` | Picked from `/examples`. Each preset has 5 ramps (leaf, leaf2, accent, bark, ground), plus an optional moss ramp, resampled to *N* steps like a CLUT. A preset can also set its land (`relief`: rolling amount, hillside `slope`, a `ravine`), how dense the forest is (`density`, `gaps`, `clearing`), `trails` kept clear through it, `ferns`, and `moss` on the bark. |
 | Pixel leaves | `src/leafgen.js` | Rasterises blades (broad / lobed / round) or needle sprays (spray / tuft) into 4 cluster tiles. Tiles store **tone indices**, not colours, so a palette swap is free. |
-| Tree skeletons | `src/treegen.js` | Honda / Weber–Penn style recursion: branch angle, length ratio, golden-angle roll, crown envelope, tropism, and da Vinci radius rule. Conifers are monopodial whorls on a cone envelope. Species: fir, larch, beech, oak, laurel, bare, snag, shrub. |
+| Tree skeletons | `src/treegen.js` | Honda / Weber–Penn style recursion: branch angle, length ratio, golden-angle roll, crown envelope, tropism, and da Vinci radius rule. Conifers are monopodial whorls on a cone envelope. Species: fir, larch, beech, oak, laurel, bare, snag, shrub, and for the Pacific Northwest scenes Douglas fir (long bare trunks, high narrow crowns), bigleaf maple (leaning, sparse) and sword fern (a rosette of frond cards with a pinnate leaf tile). |
 | Geometry | `src/treemesh.js` | 3–6 sided tapered prisms for limbs. Leaf clusters are single quads that the vertex shader turns to face the camera. |
 | Shaders | `src/materials.js` | Vertex snapping, affine UVs, ramp lookup with Bayer dithering, height fog with drifting noise, 1-tap nearest shadow map, dithered LOD cross-fade. |
 | Impostors | `src/impostor.js` | Each variant is baked (lit and self-shadowed) from *N* angles into one atlas row. Far trees are Y-axis billboards that pick the nearest angle. |

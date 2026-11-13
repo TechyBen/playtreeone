@@ -65,6 +65,24 @@ export const SPECIES = {
   },
   snag: { form: 'snag', leaf: null, height: [4, 11], trunkR: 0.05 },
   shrub: { form: 'shrub', leaf: 'round', ramp: 1, height: [0.8, 1.9], clusterSize: [0.9, 1.4] },
+  // Pacific Northwest: tall Douglas firs with long bare trunks and high, narrow
+  // crowns; bigleaf maples that lean and arch (mossy, sparse autumn leaves);
+  // sword ferns, a ground rosette of arching fronds.
+  douglas: {
+    form: 'conifer', leaf: 'spray', ramp: 0,
+    height: [24, 34], trunkR: 0.017, crownBase: 0.55,
+    whorls: [12, 17], perWhorl: [3, 4], branchLen: 0.15,
+    lift: [-0.4, 0.15], droop: 0.22,
+    clusterSize: [1.2, 1.7], clusterStep: 0.8,
+  },
+  maple: {
+    form: 'broad', leaf: 'broad', ramp: 1, shape: 'spread', leaves: true, lean: 0.4,
+    height: [15, 22], trunkR: 0.028, trunkLen: 0.72, crownStart: 0.6, trunkBranches: [2, 4],
+    levels: 2, children: [2, 3], angle0: [20, 38], angle: [25, 45],
+    len0: 0.36, lenRatio: 0.6, tropism: 0.02, bend: 0.3, apexSplit: 2,
+    clusterSize: [0.75, 1.05],
+  },
+  fern: { form: 'fern', leaf: 'frond', ramp: 0, height: [0.7, 1.2], clusterSize: [0.8, 1.1] },
 };
 
 function randomUnit(rng) {
@@ -153,7 +171,7 @@ function growBroadLimb(tree, sp, rng, start, dir, len, r, level) {
 
 function growBroad(tree, sp, rng, H) {
   const r0 = H * sp.trunkR;
-  const lean = randomUnit(rng).multiplyScalar(0.08);
+  const lean = randomUnit(rng).multiplyScalar(sp.lean ?? 0.08);
   lean.y = 0;
   const trunk = walk(new V3(), UP.clone().add(lean).normalize(), H * sp.trunkLen, r0, r0 * 0.55, 5, sp.bend * 0.25, 0.04, rng);
   trunk.radii[0] *= 1.35; // root flare
@@ -242,6 +260,23 @@ function growShrub(tree, sp, rng, H) {
   addCluster(tree, sp, rng, new V3(0, H * 0.5, 0), 1.1);
 }
 
+// Sword fern: a rosette of fronds arching up and out from the crown, drawn
+// as leaf cards along each frond (no stems; at this size the fronds are all
+// leaf).
+function growFern(tree, sp, rng, H) {
+  const n = rng.int(7, 11);
+  const a0 = rng.float(0, Math.PI * 2);
+  for (let i = 0; i < n; i++) {
+    const a = a0 + (i * Math.PI * 2) / n + rng.float(-0.3, 0.3);
+    const up = rng.float(0.9, 1.6);
+    const dir = new V3(Math.cos(a), up, Math.sin(a)).normalize();
+    const frond = walk(new V3(), dir, H * rng.float(1.0, 1.35), 0.01, 0.005, 3, 0.1, -0.35, rng);
+    addCluster(tree, sp, rng, sampleLimb(frond, 0.45).p, 0.85);
+    addCluster(tree, sp, rng, sampleLimb(frond, 0.85).p, 1);
+  }
+  addCluster(tree, sp, rng, new V3(0, H * 0.35, 0), 0.8);
+}
+
 export function generateTree(speciesId, seed) {
   const sp = SPECIES[speciesId];
   const rng = new Rng(seed);
@@ -250,6 +285,7 @@ export function generateTree(speciesId, seed) {
   if (sp.form === 'conifer') growConifer(tree, sp, rng, H);
   else if (sp.form === 'broad') growBroad(tree, sp, rng, H);
   else if (sp.form === 'snag') growSnag(tree, sp, rng, H);
+  else if (sp.form === 'fern') growFern(tree, sp, rng, H);
   else growShrub(tree, sp, rng, H);
 
   // Bounds (around the trunk axis, for impostor framing) and crown centre.
