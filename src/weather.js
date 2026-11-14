@@ -2,7 +2,8 @@
 // https://open-meteo.com/en/docs
 //
 // Privacy: requests carry only latitude/longitude rounded to 0.1 deg
-// (about 10 km). Town lookups go to Open-Meteo's geocoder once, when asked.
+// (about 10 km). Towns are looked up in the built-in table (cities.js), not
+// online.
 // The last reading is cached in localStorage so offline starts still have
 // weather.
 
@@ -20,18 +21,6 @@ const CODES = {
 };
 
 export const round1 = v => Math.round(v * 10) / 10;
-
-export async function lookupTown(name) {
-  const url = `https://geocoding-api.open-meteo.com/v1/search?count=1&language=en&format=json&name=${encodeURIComponent(name)}`;
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`town lookup failed (${r.status})`);
-  const hit = (await r.json()).results?.[0];
-  if (!hit) throw new Error(`no place called "${name}"`);
-  return {
-    label: [hit.name, hit.admin1, hit.country_code].filter(Boolean).join(', '),
-    lat: round1(hit.latitude), lon: round1(hit.longitude),
-  };
-}
 
 export async function fetchWeather(lat, lon) {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${round1(lat)}&longitude=${round1(lon)}` +

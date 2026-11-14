@@ -6,3 +6,4 @@ examples/*
 Thumbs.db
 tools/flowers/cache/
 tools/flowers/sheet.json
+tools/cities/cache/

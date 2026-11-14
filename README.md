@@ -48,7 +48,7 @@ At night, with the real-time sun on, `src/stars.js` draws about 5,000 real stars
 
 ## Weather
 
-Under **Weather** in the panel, choose `live` to use [Open-Meteo](https://open-meteo.com/) (free, no key, non-commercial use), or `manual` to test with sliders. **look up town** turns a place name into coordinates once, rounded to 0.1° (about 10 km). Weather requests only ever send that rounded location. Readings refresh every 30 minutes and are cached for offline starts.
+Under **Weather** in the panel, choose `live` to use [Open-Meteo](https://open-meteo.com/) (free, no key, non-commercial use), or `manual` to test with sliders. **look up town** turns a place name into coordinates, rounded to 0.1° (about 10 km), from a list built into the page (`src/citydata.js`: the 34,000 towns of 15,000 people or more, from [GeoNames](https://www.geonames.org), CC BY 4.0, see [licenses/geonames.txt](licenses/geonames.txt); written by `tools/cities/build.py`), so no place names are searched online. It also takes `lat, lon`, and `Portland, US` picks a country. Weather requests only ever send the rounded location. Readings refresh every 30 minutes and are cached for offline starts.
 
 | Reading | Effect |
 |---|---|

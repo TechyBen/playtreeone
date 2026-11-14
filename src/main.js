@@ -17,7 +17,8 @@ import { sunPosition, moonPosition, estimateLocation, daylight, siderealTime } f
 import { makeStars } from './stars.js';
 import { makeMoon } from './moon.js';
 import { makePrecip } from './precip.js';
-import { fetchWeather, cachedWeather, lookupTown, toScene, round1, windVector } from './weather.js';
+import { fetchWeather, cachedWeather, toScene, round1, windVector } from './weather.js';
+import { findPlace } from './cities.js';
 import { Rng, fbm, hash2 } from './rng.js';
 
 // Palette hex values are used as-is (no sRGB<->linear conversion): PS1 style.
@@ -695,7 +696,8 @@ function setWeatherMode() {
     async lookUp() {
       if (!params.town.trim()) return;
       try {
-        const t = await lookupTown(params.town.trim());
+        const t = await findPlace(params.town.trim());
+        if (!t) throw new Error(`no town called "${params.town.trim()}" in the built-in list`);
         Object.assign(params, { town: t.label, latitude: t.lat, longitude: t.lon });
         weather.status = `found ${t.label} (${t.lat}, ${t.lon})`;
         if (params.realSun) updateRealSun();
@@ -708,7 +710,7 @@ function setWeatherMode() {
       gui.controllersRecursive().forEach(c => c.updateDisplay());
     },
   };
-  f.add(look, 'lookUp').name('look up town');
+  f.add(look, 'lookUp').name('look up town (built in)');
   const m = f.addFolder('Manual (for testing)');
   const manual = () => { if (params.weather === 'manual') applyManualWeather(); };
   m.add(params, 'wCloud', 0, 1, 0.01).name('cloud').onChange(manual);
