@@ -65,6 +65,13 @@ const maxFps = +(query.get('fps') || 0);
 }
 
 const AREA = 120; // half-size of the forest square, metres
+// The forest is one square tile that repeats on every side: the land, trails
+// and plants at x and x + TILE are the same, so past the edge the view runs on
+// into the next copy. (Walking that far brings you back to the middle; see
+// edgeReturn.)
+const TILE = AREA * 2;
+const wrapD = d => d - TILE * Math.round(d / TILE); // into -AREA..AREA
+const inTile = (x, z) => Math.abs(x) < AREA && Math.abs(z) < AREA;
 
 // ---------------------------------------------------------------- renderer
 const canvas = document.getElementById('view');
@@ -93,16 +100,24 @@ const branchMat = makeBranchMaterial(barkTex);
 // tilts the land outside the clearing along compass direction `dir` (a
 // hillside, rising on one side and falling away on the other), and `ravine`
 // cuts a winding gully across the far side. The clearing stays level.
+// Everything repeats every TILE metres: the noise has a whole number of
+// cycles per tile, and distances and directions use periodic stand-ins that
+// match the real ones near the middle and turn round smoothly at the edges.
 const relief = { amp: 8, slope: 0, dir: 0, ravine: 0 };
+const NOISE_CYCLES = 4; // noise features per tile (about 60 m apart)
+const per = v => (TILE / (2 * Math.PI)) * Math.sin((2 * Math.PI * v) / TILE);
 function terrainHeight(x, z) {
-  const r = Math.hypot(x, z);
+  const sx = Math.sin((Math.PI * x) / TILE), sz = Math.sin((Math.PI * z) / TILE);
+  const r = (TILE / Math.PI) * Math.sqrt(sx * sx + sz * sz); // ~distance from the middle
   const S = THREE.MathUtils.smoothstep;
   const rough = 0.25 + 0.75 * S(r, 8, 40);
-  let h = (fbm(x * 0.015 + 50, z * 0.015 + 50, 4, 3) - 0.5) * relief.amp * rough
+  const nf = NOISE_CYCLES / TILE;
+  let h = (fbm(x * nf + 50, z * nf + 50, 4, 3, NOISE_CYCLES, NOISE_CYCLES) - 0.5) * relief.amp * rough
     + Math.pow(Math.max(0, r - 30) / 90, 2) * 14;
   if (relief.slope || relief.ravine) {
     const c = Math.cos(relief.dir), sn = Math.sin(relief.dir);
-    const along = x * c + z * sn, across = -x * sn + z * c;
+    const px = per(x), pz = per(z);
+    const along = px * c + pz * sn, across = -px * sn + pz * c;
     h += along * relief.slope * S(r, 9, 30);
     if (relief.ravine) {
       const d = along + 24 + (fbm(across * 0.02 + 3, 7, 3, 11) - 0.5) * 30;
@@ -112,7 +127,8 @@ function terrainHeight(x, z) {
   return h;
 }
 
-const groundGeo = new THREE.PlaneGeometry(AREA * 2 + 60, AREA * 2 + 60, 120, 120);
+// The ground reaches a tile past each edge, so from the edge you still see land.
+const groundGeo = new THREE.PlaneGeometry(TILE * 2, TILE * 2, 192, 192);
 groundGeo.rotateX(-Math.PI / 2);
 function shapeGround() {
   const p = groundGeo.attributes.position;
@@ -131,6 +147,7 @@ let localFlowerList = [];
 const TRAIL_RES = 256;
 const trailTex = new THREE.DataTexture(new Uint8Array(TRAIL_RES * TRAIL_RES * 4), TRAIL_RES, TRAIL_RES);
 trailTex.magFilter = trailTex.minFilter = THREE.LinearFilter;
+trailTex.wrapS = trailTex.wrapT = THREE.RepeatWrapping; // one tile, repeating
 function makeTrails(n, seed) {
   const rng = new Rng(seed * 13 + 5);
   trails = [];
@@ -147,8 +164,9 @@ function makeTrails(n, seed) {
     }
     trails.push(pts);
   }
-  // Mask: 1 on a trail centre line, fading to 0 about 1.3 m out.
-  const data = trailTex.image.data, half = AREA + 30;
+  // Mask: 1 on a trail centre line, fading to 0 about 1.3 m out. It covers
+  // one tile; a trail running past an edge comes in at the opposite one.
+  const data = trailTex.image.data, half = AREA;
   data.fill(0);
   for (const pts of trails) {
     for (const [px, pz] of pts) {
@@ -156,10 +174,9 @@ function makeTrails(n, seed) {
       const rad = 2;
       for (let ty = Math.floor(cz - rad); ty <= cz + rad; ty++) {
         for (let tx = Math.floor(cx - rad); tx <= cx + rad; tx++) {
-          if (tx < 0 || ty < 0 || tx >= TRAIL_RES || ty >= TRAIL_RES) continue;
           const wx = ((tx + 0.5) / TRAIL_RES - 0.5) * 2 * half, wz = ((ty + 0.5) / TRAIL_RES - 0.5) * 2 * half;
           const v = Math.round(255 * (1 - THREE.MathUtils.smoothstep(Math.hypot(wx - px, wz - pz), 0.5, 1.6)));
-          const o = (ty * TRAIL_RES + tx) * 4;
+          const o = (((ty % TRAIL_RES) + TRAIL_RES) % TRAIL_RES * TRAIL_RES + ((tx % TRAIL_RES) + TRAIL_RES) % TRAIL_RES) * 4;
           if (v > data[o]) data[o] = v;
         }
       }
@@ -169,10 +186,11 @@ function makeTrails(n, seed) {
   U.uTrail.value = trailTex;
   U.uTrailArea.value = half;
 }
-// Distance from (x, z) to the nearest trail point (they're 2 m apart).
+// Distance from (x, z) to the nearest trail point (they're 2 m apart), in
+// whichever copy of the tile is nearest.
 function trailDist(x, z) {
   let d = Infinity;
-  for (const pts of trails) for (const [px, pz] of pts) d = Math.min(d, Math.hypot(x - px, z - pz));
+  for (const pts of trails) for (const [px, pz] of pts) d = Math.min(d, Math.hypot(wrapD(x - px), wrapD(z - pz)));
   return d;
 }
 const ground = new THREE.Mesh(groundGeo, makeGroundMaterial(groundTex));
@@ -372,6 +390,9 @@ function buildForest() {
       new THREE.Vector3(scale, scale, scale));
     v.instances.push({ pos, m, scale });
   };
+  // Undergrowth is scattered out from the middle to the tile's corners
+  // (points outside the tile are skipped), so the tiles meet with no bare patch.
+  const REACH = AREA * Math.SQRT2;
   const treeMix = Object.fromEntries(Object.entries(mix).filter(([, w]) => w > 0));
   if (Object.keys(treeMix).length && params.trees > 0) {
     // Denser scenes (`density`) pack more trees in; `gaps` sets how much of
@@ -389,9 +410,11 @@ function buildForest() {
   }
   if (bySpecies.shrub) {
     const n = Math.round(params.shrubs * p.shrubs);
-    for (let i = 0; i < n; i++) {
-      const a = rng.float(0, Math.PI * 2), r = 4 + Math.pow(rng.next(), 0.7) * (AREA - 4);
+    for (let i = 0, tries = 0; i < n && tries < n * 3; tries++) {
+      const a = rng.float(0, Math.PI * 2), r = 4 + Math.pow(rng.next(), 0.7) * (REACH - 4);
       const x = Math.cos(a) * r, z = Math.sin(a) * r;
+      if (!inTile(x, z)) continue;
+      i++;
       if (trails.length && trailDist(x, z) < 1.2) continue;
       place('shrub', x, z, rng.float(0.7, 1.4));
     }
@@ -402,8 +425,9 @@ function buildForest() {
     const n = Math.round(params.ferns * p.ferns);
     for (let i = 0, tries = 0; i < n && tries < n * 6; tries++) {
       // Weighted toward the middle, where you are.
-      const a = rng.float(0, Math.PI * 2), r = 2.5 + Math.pow(rng.next(), 1.3) * (AREA - 2.5);
+      const a = rng.float(0, Math.PI * 2), r = 2.5 + Math.pow(rng.next(), 1.3) * (REACH - 2.5);
       const x = Math.cos(a) * r, z = Math.sin(a) * r;
+      if (!inTile(x, z)) continue;
       const patch = fbm(x * 0.06 + 31, z * 0.06 + 17, 3, params.seed + 7);
       if (patch < 0.36) continue;
       if (trails.length && trailDist(x, z) < 1.0) continue;
@@ -419,8 +443,9 @@ function buildForest() {
     const total = localFlowerList.reduce((t, f) => t + f.weight, 0);
     const clear = p.clearing ?? 9, gaps = (p.gaps ?? 0.36) + 0.06;
     for (let placed = 0, tries = 0; placed < n && tries < n * 4; tries++) {
-      const a = rng.float(0, Math.PI * 2), r = 2 + Math.pow(rng.next(), 1.6) * (AREA - 2);
+      const a = rng.float(0, Math.PI * 2), r = 2 + Math.pow(rng.next(), 1.6) * (REACH - 2);
       const x = Math.cos(a) * r, z = Math.sin(a) * r;
+      if (!inTile(x, z)) continue;
       const td = trails.length ? trailDist(x, z) : Infinity;
       if (td < 0.8) continue;
       const open = (r < clear + 6) + (td < 3.5) + (fbm(x * 0.03 + 9, z * 0.03 + 9, 3, params.seed) < gaps);
@@ -428,7 +453,7 @@ function buildForest() {
       let w = rng.next() * total, f = 0;
       while (f < localFlowerList.length - 1 && w > localFlowerList[f].weight) { w -= localFlowerList[f].weight; f++; }
       for (let i = rng.int(4, 10); i > 0 && placed < n; i--) {
-        const fx = x + rng.float(-1.4, 1.4), fz = z + rng.float(-1.4, 1.4);
+        const fx = wrapD(x + rng.float(-1.4, 1.4)), fz = wrapD(z + rng.float(-1.4, 1.4));
         if (trails.length && trailDist(fx, fz) < 0.7) continue;
         place(`flower${f}`, fx, fz, rng.float(0.8, 1.2));
         placed++;
@@ -472,17 +497,27 @@ function buildForest() {
 }
 
 // Per frame: split each variant's instances into near / far with a dithered
-// cross-fade band just inside the LOD distance.
+// cross-fade band just inside the LOD distance. Each plant is drawn in the
+// copy of the tile nearest the camera, so the forest carries on past the edge.
+const copyM = new THREE.Matrix4(), copyP = new THREE.Vector3();
 function updateLod() {
   const cam = camera.position;
   const lod = params.lodDistance, band = Math.max(2, lod * 0.2);
   for (const v of variants) {
     let nn = 0, nf = 0;
     for (const inst of v.instances) {
-      const d = cam.distanceTo(inst.pos);
+      const ox = wrapD(inst.pos.x - cam.x) - (inst.pos.x - cam.x);
+      const oz = wrapD(inst.pos.z - cam.z) - (inst.pos.z - cam.z);
+      let m = inst.m;
+      if (ox || oz) {
+        m = copyM.copy(inst.m);
+        m.elements[12] += ox;
+        m.elements[14] += oz;
+      }
+      const d = cam.distanceTo(copyP.set(inst.pos.x + ox, inst.pos.y, inst.pos.z + oz));
       const f = THREE.MathUtils.smoothstep(d, lod - band, lod);
-      if (f < 1) { v.near.setMatrixAt(nn, inst.m); v.fadeNear.array[nn++] = f; }
-      if (f > 0) { v.far.setMatrixAt(nf, inst.m); v.fadeFar.array[nf++] = f; }
+      if (f < 1) { v.near.setMatrixAt(nn, m); v.fadeNear.array[nn++] = f; }
+      if (f > 0) { v.far.setMatrixAt(nf, m); v.fadeFar.array[nf++] = f; }
     }
     v.near.count = nn;
     if (v.leaves) v.leaves.count = nn;
@@ -789,6 +824,7 @@ const keys = new Set();
 addEventListener('keydown', e => { if (!(e.target instanceof HTMLInputElement)) keys.add(e.code); });
 addEventListener('keyup', e => keys.delete(e.code));
 function walk(dt) {
+  if (edgeT >= 0) return; // on the way back to the middle
   const f = new THREE.Vector3();
   camera.getWorldDirection(f);
   f.y = 0;
@@ -806,6 +842,54 @@ function walk(dt) {
   m.y = terrainHeight(p.x + m.x, p.z + m.z) - terrainHeight(p.x, p.z);
   p.add(m);
   controls.target.add(m);
+}
+
+// ---------------------------------------------------------------- edge
+// Walking out of the tile: the fog rolls in, you're put back in the middle
+// (facing the same way), and the fog clears. Keys and mouse do nothing until
+// it has cleared. (The screensaver's own camera stays in the clearing, so
+// this only happens to someone walking.) The view up to the edge runs on into the next copy of the
+// tile, so there's no visible end; this only stops long walks going further
+// than the forest is made for. Other walkers (skytreeone's wander mode) check
+// edge.busy() and move their own position in edge.onReturn(dx, dy, dz).
+const EDGE_IN = 1.5, EDGE_HOLD = 0.3, EDGE_OUT = 1.5;
+let edgeT = -1; // seconds into a return, or -1
+const edge = { busy: () => edgeT >= 0, onReturn: [] };
+const smooth01 = t => THREE.MathUtils.smoothstep(t, 0, 1);
+function edgeReturn(dt) {
+  const p = camera.position;
+  if (edgeT < 0) {
+    if (inTile(p.x, p.z)) return;
+    edgeT = 0;
+    controls.enabled = false;
+  }
+  const before = edgeT;
+  edgeT += dt;
+  if (before < EDGE_IN + EDGE_HOLD / 2 && edgeT >= EDGE_IN + EDGE_HOLD / 2) {
+    // Behind full fog: back to the middle, keeping the height above ground.
+    const d = new THREE.Vector3(-p.x, terrainHeight(0, 0) - terrainHeight(p.x, p.z), -p.z);
+    p.add(d);
+    controls.target.add(d);
+    for (const fn of edge.onReturn) fn(d.x, d.y, d.z);
+  }
+  const fade = edgeT < EDGE_IN ? smooth01(edgeT / EDGE_IN)
+    : 1 - smooth01((edgeT - EDGE_IN - EDGE_HOLD) / EDGE_OUT);
+  // The screensaver sets its own fog every frame (its scene changes), so
+  // there this adds to it; elsewhere it starts from the scene's own.
+  const pu = pipe.uniforms;
+  const base = SAVER
+    ? { fade: pu.uFade.value, fog: U.uFogDensity.value, rays: pu.uGodray.value }
+    : { fade: 0, fog: light.fog, rays: light.godrays };
+  if (fade >= base.fade) {
+    pu.uFade.value = fade;
+    pu.uFadeColor.value.copy(U.uFogColor.value);
+  }
+  U.uFogDensity.value = pu.uFogDensity.value = base.fog * (1 + 3 * fade);
+  pu.uGodray.value = base.rays * (1 - fade);
+  if (edgeT >= EDGE_IN + EDGE_HOLD + EDGE_OUT) {
+    edgeT = -1;
+    controls.enabled = true;
+  }
 }
 
 // ---------------------------------------------------------------- loop
@@ -837,6 +921,7 @@ function frame(now) {
   if (params.weather === 'live' && now - weather.fetchedAt > 30 * 60e3) refreshWeather();
   for (const fn of beforeFrame) fn(now, dt);
   walk(dt);
+  edgeReturn(dt);
   controls.update();
   const floor = terrainHeight(camera.position.x, camera.position.z) + 0.6;
   if (camera.position.y < floor) {
@@ -898,7 +983,7 @@ function frame(now) {
 
 const api = {
   THREE, params, camera, controls, U, pipe, gui, beforeFrame,
-  variants: () => variants, buildForest, rebakeAll, applyPreset, syncUniforms, terrainHeight,
+  variants: () => variants, buildForest, edge, AREA, rebakeAll, applyPreset, syncUniforms, terrainHeight,
   light, updateRealSun, scene, moon, weather, setWeatherMode, flowers: () => localFlowerList,
 };
 // Handy for poking at things from the devtools console.

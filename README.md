@@ -14,7 +14,7 @@ python -m http.server 8173 --directory .
 
 Then open http://localhost:8173. ES modules need a local server; double-clicking `index.html` won't work.
 
-Controls: drag to orbit, right-drag to pan, wheel to zoom, WASD to walk (hold Shift to run). Preset pills are at the top left; every tuning knob is in the panel at the top right.
+Controls: drag to orbit, right-drag to pan, wheel to zoom, WASD to walk (hold Shift to run). The forest is a 240 m square that repeats on every side, so it runs on past the edge; walk out of it and the fog closes in and brings you back to the middle. Preset pills are at the top left; every tuning knob is in the panel at the top right.
 
 ## Ambient mode
 
