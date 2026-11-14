@@ -66,7 +66,16 @@ Live weather can't run inside the claude.ai artifact, because artifacts block ou
 
 ## Wildflowers
 
-The forest floor gets the wildflowers that bloom where you are, at this time of year. The trees stay general. `src/flowerdata.js` holds 300 species and, for each 10° cell of the world, the dozen most often recorded in flower there, with the quarters of the year they bloom. `src/flowers.js` picks the ones flowering now in your cell, using the same rough location as the sun, estimated from your time zone. Nothing is looked up online. The **time shift** slider moves the season too. If fewer than three species flower that quarter, a few from the neighbouring quarters fill in.
+The forest floor gets the wildflowers that bloom where you are, at this time of year. The trees stay general. `src/flowerdata.js` holds 300 species and, for each 10° cell of the world, the dozen most often recorded in flower there, with the quarters of the year they bloom. `src/flowers.js` picks the ones flowering now in your cell, using the same rough location as the sun: estimated from your time zone, or the town you look up under **Weather**. Nothing is looked up online. The **time shift** slider moves the season too. If fewer than three species flower that quarter, a few from the neighbouring quarters fill in.
+
+| | |
+|---|---|
+| ![London in May: herb Robert, lesser celandine, deadnettles and daisies at the edge of the clearing (Golden Sunrise)](docs/flowers-london-may.png) | ![San Francisco Bay in April: blue dicks, Ithuriel's spear, milk thistle and white clover (Quiet Larch)](docs/flowers-california-april.png) |
+| **London, May**: herb Robert, lesser celandine, deadnettles, daisies | **California, April**: blue dicks, Ithuriel's spear, milk thistle, clover |
+| ![Tokyo in April: evening primrose, clovers and pink knotweed in Fern Hollow](docs/flowers-japan-april.png) | ![Sydney in October: flannel flowers and montbretia (Quiet Larch)](docs/flowers-australia-october.png) |
+| **Japan, April**: evening primrose, clovers, pink knotweed | **Sydney, October**: flannel flowers, montbretia |
+| ![The Swiss Alps in July: fireweed, herb Robert and marsh marigold (Quiet Larch, dense)](docs/flowers-alps-july.png) | ![Borneo in February: flame lilies, orchids and periwinkle (Laurel Gloom)](docs/flowers-borneo.png) |
+| **Alps, July**: fireweed, herb Robert, marsh marigold | **Borneo, February**: flame lilies, orchids, periwinkle |
 
 Each species is an approximate likeness, not a botanical drawing: a petal colour, a centre colour, a head shape and a height. There are eight head shapes, drawn from code into leaf-card tiles like the leaves (`makeFlowerAtlas` in `src/leafgen.js`): daisy, cup, star, bell, spike, umbel, cluster and trumpet. Flowers grow in single-species clumps, mostly where there's light: round the clearing, along trail edges and in gaps. They're denser than in real life so you find them without hunting. Small ones are drawn about 1.4× larger than life, and tall ones at their true size. The **wildflowers** slider sets how many. `?flowers=0` in the address turns them off, and `?lat=…&lon=…` sets the place, for the sun as well as the flowers.
 
